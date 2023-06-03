@@ -8,7 +8,8 @@ import (
 	"strconv"
 )
 
-const inputFileName = "001/1/input.txt"
+const inputFileName = "001/input.txt"
+const topElfCount = 3
 
 type Elf struct {
 	num   int64
@@ -26,15 +27,28 @@ func main() {
 
 	inputs := scanInput(file)
 	elves := createElves(inputs)
-	var maxElf Elf
+
+	topElves := [topElfCount]Elf{}
 
 	for elf := range elves {
-		if elf.total > maxElf.total {
-			maxElf = elf
+		for i := 0; i < len(topElves); i++ {
+			if elf.total > topElves[i].total {
+				tmp := elf
+				elf = topElves[i]
+				topElves[i] = tmp
+			}
 		}
 	}
 
-	fmt.Println(maxElf)
+	var topElvesTotalCalories int64
+
+	for i, elf := range topElves {
+		fmt.Printf("Elf #%v carring most Calories: %v\n", i+1, elf)
+
+		topElvesTotalCalories += elf.total
+	}
+
+	fmt.Printf("Total calories carried by Top %v Elves: %v\n", topElfCount, topElvesTotalCalories)
 }
 
 func scanInput(input *os.File) <-chan string {
