@@ -26,6 +26,14 @@ const (
 	rockScore     = 1
 	paperScore    = 2
 	scissorsScore = 3
+
+	opponentPickRock    = "A"
+	opponentPickPaper   = "B"
+	opponentPickScissor = "C"
+
+	outcomeDefeat  = "X"
+	outcomeDraw    = "Y"
+	outcomeVictory = "Z"
 )
 
 type Pick struct {
@@ -82,10 +90,9 @@ func buildRounds(input <-chan string) <-chan Round {
 	go func(input <-chan string, out chan<- Round) {
 		for in := range input {
 			picks := strings.Split(in, " ")
-			round := Round{
-				opponentPick: getPick(picks[0]),
-				myPick:       getPick(picks[1]),
-			}
+			round := Round{}
+			round.opponentPick = getOpponentPick(picks[0])
+			round.myPick = getMyPick(round.opponentPick, picks[1])
 
 			out <- round
 		}
@@ -101,7 +108,7 @@ func scoreRounds(input <-chan Round) <-chan Round {
 
 	go func(input <-chan Round, out chan<- Round) {
 		for in := range input {
-			switch getRoundResult(in) {
+			switch getRoundOutcome(in) {
 			case victoryStatus:
 				in.score += victoryScore + in.myPick.score
 			case drawStatus:
@@ -119,30 +126,91 @@ func scoreRounds(input <-chan Round) <-chan Round {
 	return out
 }
 
-func getPick(pick string) Pick {
+func getOpponentPick(pick string) Pick {
 	switch pick {
-	case "A", "X":
+	case opponentPickRock:
 		return Pick{
 			pick:  rock,
 			score: rockScore,
 		}
-	case "B", "Y":
+	case opponentPickPaper:
 		return Pick{
 			pick:  paper,
 			score: paperScore,
 		}
-	case "C", "Z":
+	case opponentPickScissor:
 		return Pick{
 			pick:  scissors,
 			score: scissorsScore,
 		}
 	default:
-		fmt.Println("unsupported type")
+		log.Println("unsupported type")
 		return Pick{}
 	}
 }
 
-func getRoundResult(round Round) string {
+func getMyPick(opponentPick Pick, outcome string) Pick {
+	if outcome == outcomeDefeat {
+		return getLosingPick(opponentPick)
+	}
+
+	if outcome == outcomeVictory {
+		return getWinningPick(opponentPick)
+	}
+
+	return Pick{
+		pick:  opponentPick.pick,
+		score: opponentPick.score,
+	}
+}
+
+func getLosingPick(opponentPick Pick) Pick {
+	switch opponentPick.pick {
+	case rock:
+		return Pick{
+			pick:  scissors,
+			score: scissorsScore,
+		}
+	case paper:
+		return Pick{
+			pick:  rock,
+			score: rockScore,
+		}
+	case scissors:
+		return Pick{
+			pick:  paper,
+			score: paperScore,
+		}
+	default:
+		log.Println("unsupported pick")
+		return Pick{}
+	}
+}
+
+func getWinningPick(opponentPick Pick) Pick {
+	switch opponentPick.pick {
+	case rock:
+		return Pick{
+			pick:  paper,
+			score: paperScore,
+		}
+	case paper:
+		return Pick{
+			pick:  scissors,
+			score: scissorsScore,
+		}
+	case scissors:
+		return Pick{
+			pick:  rock,
+			score: rockScore,
+		}
+	default:
+		log.Println("unsupported pick")
+		return Pick{}
+	}
+}
+
+func getRoundOutcome(round Round) string {
 	if round.opponentPick.pick == round.myPick.pick {
 		return drawStatus
 	}
