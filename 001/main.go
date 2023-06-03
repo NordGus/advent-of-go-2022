@@ -70,7 +70,7 @@ func scanInput(input *os.File) <-chan string {
 func createElves(input <-chan string) <-chan Elf {
 	out := make(chan Elf)
 
-	go func(in <-chan string, out chan<- Elf) {
+	go func(input <-chan string, out chan<- Elf) {
 		var elf Elf
 
 		for in := range input {
