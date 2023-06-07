@@ -10,7 +10,7 @@ import (
 const (
 	inputFileName = "003/input.txt"
 
-	rucksackCompartmentCount = 2
+	groupSize = 3
 )
 
 type Rucksack struct {
@@ -61,29 +61,26 @@ func buildRucksack(input <-chan string) <-chan Rucksack {
 	out := make(chan Rucksack)
 
 	go func(input <-chan string, output chan<- Rucksack) {
-		for in := range input {
-			inRunes := []rune(in)
-			inLen := len(inRunes)
-			stepSize := inLen / rucksackCompartmentCount
+		buffer := make([]string, groupSize)
+		buffPos := 0
 
-			if inLen%rucksackCompartmentCount != 0 {
-				fmt.Println("invalid input", in)
+		for in := range input {
+			buffer[buffPos] = in
+			buffPos++
+
+			if buffPos < groupSize {
 				continue
 			}
 
-			compartments := make([]string, rucksackCompartmentCount)
 			commonItems := make(map[string]uint)
 
-			for i := 0; i < rucksackCompartmentCount; i++ {
-				start := i * stepSize
-				end := (i + 1) * stepSize
-				compartments[i] = string(inRunes[start:end])
-			}
-
 			output <- Rucksack{
-				Compartments: compartments,
+				Compartments: buffer,
 				CommonItems:  commonItems,
 			}
+
+			buffer = make([]string, groupSize)
+			buffPos = 0
 		}
 
 		close(output)
@@ -97,17 +94,21 @@ func checkForCommonItems(input <-chan Rucksack) <-chan Rucksack {
 
 	go func(input <-chan Rucksack, output chan<- Rucksack) {
 		for in := range input {
-			for i := 0; i < rucksackCompartmentCount; i++ {
+			for i := 0; i < len(in.Compartments); i++ {
+				touched := make(map[string]bool)
+
 				for _, item := range in.Compartments[i] {
 					it := string(item)
-					count, ok := in.CommonItems[it]
+					_, ok := in.CommonItems[it]
 
-					if !ok && i == 0 {
+					if !ok {
 						in.CommonItems[it] = 1
+						touched[it] = true
 					}
 
-					if ok && count <= uint(i) {
+					if ok && !touched[it] {
 						in.CommonItems[it] += 1
+						touched[it] = true
 					}
 				}
 			}
@@ -127,7 +128,7 @@ func setRucksackPriority(input <-chan Rucksack) <-chan Rucksack {
 	go func(input <-chan Rucksack, output chan<- Rucksack) {
 		for in := range input {
 			for item, count := range in.CommonItems {
-				if count == rucksackCompartmentCount {
+				if count == groupSize {
 					in.Priority = prioritize(item)
 				}
 			}
