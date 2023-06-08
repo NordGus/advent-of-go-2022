@@ -131,11 +131,11 @@ func checkOverlap(input <-chan Pair) <-chan Pair {
 }
 
 func (p *Pair) overlaps() bool {
-	if p.Assignments[0].Start <= p.Assignments[1].Start && p.Assignments[0].End >= p.Assignments[1].End {
+	if p.Assignments[0].Start <= p.Assignments[1].Start && p.Assignments[0].End >= p.Assignments[1].Start {
 		return true
 	}
 
-	if p.Assignments[0].Start >= p.Assignments[1].Start && p.Assignments[0].End <= p.Assignments[1].End {
+	if p.Assignments[0].Start >= p.Assignments[1].Start && p.Assignments[0].Start <= p.Assignments[1].End {
 		return true
 	}
 
