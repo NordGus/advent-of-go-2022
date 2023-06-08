@@ -161,12 +161,18 @@ func moveCreates(stacks <-chan []structs.Stack, instructions <-chan Instruction)
 	out := <-stacks
 
 	for instruction := range instructions {
+		stack := make([]string, instruction.Amount)
+
 		for i := 0; i < int(instruction.Amount); i++ {
 			crate, err := out[instruction.From-1].Pop()
 			if err != nil {
 				panic(err)
 			}
-			out[instruction.To-1].Push(crate)
+			stack[i] = crate
+		}
+
+		for i := int(instruction.Amount) - 1; i >= 0; i-- {
+			out[instruction.To-1].Push(stack[i])
 		}
 	}
 
