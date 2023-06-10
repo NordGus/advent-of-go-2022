@@ -1,4 +1,4 @@
-# Day 5: Supply Stacks
+# Day 6: Tuning Trouble
 
 ## Part 1
 
