@@ -59,7 +59,7 @@ func (d *Decoder) Pop() (rune, error) {
 	return popped.value, nil
 }
 
-func (d *Decoder) IsStartOfPackage() (bool, uint) {
+func (d *Decoder) IsStart() (bool, uint) {
 	if d.size < d.maxSize {
 		return false, 0
 	}

@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	inputFileName     = "006/input.txt"
-	startOfPacketSize = 4
+	inputFileName      = "006/input.txt"
+	startOfPacketSize  = 4
+	startOfMessageSize = 14
+	streamCount        = 5
 )
 
 func main() {
@@ -23,10 +25,14 @@ func main() {
 	defer file.Close()
 
 	signal := scanInput(file)
-	startOfPacketIndex := detectStartOfPacket(signal)
+	startOfPacketIndex, startOfMessageIndex := detect(signal)
 
-	for input := range startOfPacketIndex {
-		fmt.Println("First start-of-packet:", input)
+	for startOfPacket := range startOfPacketIndex {
+		fmt.Println("First start-of-packet:", startOfPacket)
+	}
+
+	for startOfMessage := range startOfMessageIndex {
+		fmt.Println("First start-of-message:", startOfMessage)
 	}
 }
 
@@ -46,6 +52,25 @@ func scanInput(input *os.File) <-chan string {
 	return out
 }
 
+func detect(input <-chan string) (<-chan uint, <-chan uint) {
+	packetSignal := make(chan string, streamCount)
+	messageSignal := make(chan string, streamCount)
+
+	startOfPacket := detectStartOfPacket(packetSignal)
+	startOfMessage := detectStartOfMessage(messageSignal)
+
+	go func(input <-chan string) {
+		for signal := range input {
+			packetSignal <- signal
+			messageSignal <- signal
+		}
+		close(packetSignal)
+		close(messageSignal)
+	}(input)
+
+	return startOfPacket, startOfMessage
+}
+
 func detectStartOfPacket(input <-chan string) <-chan uint {
 	out := make(chan uint)
 
@@ -56,9 +81,36 @@ func detectStartOfPacket(input <-chan string) <-chan uint {
 			for _, r := range signal {
 				decoder.Push(r)
 
-				startOfPacket, index := decoder.IsStartOfPackage()
+				start, index := decoder.IsStart()
 
-				if startOfPacket {
+				if start {
+					out <- index
+					break
+				}
+			}
+
+			decoder.Clear()
+		}
+
+		close(out)
+	}(input, out)
+
+	return out
+}
+
+func detectStartOfMessage(input <-chan string) <-chan uint {
+	out := make(chan uint)
+
+	go func(input <-chan string, out chan<- uint) {
+		decoder := structs.NewDecoder(startOfMessageSize)
+
+		for signal := range input {
+			for _, r := range signal {
+				decoder.Push(r)
+
+				start, index := decoder.IsStart()
+
+				if start {
 					out <- index
 					break
 				}
