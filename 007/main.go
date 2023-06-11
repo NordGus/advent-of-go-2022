@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	inputFileName = "007/input.txt"
-	maxDirSize    = 100_000
+	inputFileName        = "007/input.txt"
+	maxDirSize    uint64 = 100_000
+	maxDiskSpace  uint64 = 70_000_000
+	unusedTarget  uint64 = 30_000_000
 )
 
 func main() {
@@ -42,13 +44,20 @@ func main() {
 		fs.Stream(data[1], data[0])
 	}
 
-	var totalSize uint64
+	results := fs.DirectorySizes() // results are sorted by size from smallest to biggest
 
-	for _, size := range fs.DirectorySizes() {
-		if size <= maxDirSize {
-			totalSize += size
+	currentUnusedSpace := maxDiskSpace - results[len(results)-1].Size // Filesystem Root Dir Size (AKA used space)
+	var smallestSingleDirectory structs.DirectorySize
+
+	for i := len(results) - 1; i >= 0; i-- {
+		unusedSpace := currentUnusedSpace + results[i].Size
+
+		// the moment the unused space can't satisfy the unusedTarget return the previous one
+		if unusedSpace < unusedTarget {
+			smallestSingleDirectory = results[i+1]
+			break
 		}
 	}
 
-	fmt.Println("Total size:", totalSize)
+	fmt.Println(smallestSingleDirectory)
 }

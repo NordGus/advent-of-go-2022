@@ -52,15 +52,15 @@ func (fs *Filesystem) CD(target string) {
 	fs.currentDirectory = newDirectory
 }
 
-func (fs *Filesystem) DirectorySizes() map[string]uint64 {
+func (fs *Filesystem) DirectorySizes() []DirectorySize {
 	dirs := fs.root.getDirectoriesDirectories()
-	results := make(map[string]uint64)
+	results := make([]DirectorySize, len(dirs))
 
-	for _, dir := range dirs {
-		results[dir.Path()] = dir.Size()
+	for i := 0; i < len(dirs); i++ {
+		results[i] = DirectorySize{Directory: dirs[i].Path(), Size: dirs[i].Size()}
 	}
 
-	return results
+	return sortDirectorySize(results)
 }
 
 func (fs *Filesystem) PrintFromRoot() {
