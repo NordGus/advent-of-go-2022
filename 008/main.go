@@ -26,20 +26,25 @@ func main() {
 
 	input := scanInput(file)
 	grid := parseGrid(input)
-	visibleTrees := countVisibleTrees(grid)
+	visibleTrees, scenicScores := countVisibleTrees(grid)
 
 	var visibleTreesCount uint
-	var treeCount uint
+	var topScenicScore int
 
 	for visible := range visibleTrees {
 		if visible {
 			visibleTreesCount++
 		}
-		treeCount++
+	}
+
+	for score := range scenicScores {
+		if score > topScenicScore {
+			topScenicScore = score
+		}
 	}
 
 	fmt.Println("Visible Trees Count:", visibleTreesCount)
-	fmt.Println("Trees Count:", treeCount)
+	fmt.Println("Top Scenic Score:", topScenicScore)
 }
 
 func scanInput(input *os.File) <-chan string {
@@ -108,9 +113,10 @@ func parseGridRow(wg *sync.WaitGroup, grid *structs.Grid, currentRow int, row st
 	}
 }
 
-func countVisibleTrees(input <-chan *structs.Grid) <-chan bool {
+func countVisibleTrees(input <-chan *structs.Grid) (<-chan bool, <-chan int) {
 	grid := <-input
-	out := make(chan bool, grid.Size())
+	visible := make(chan bool, grid.Size())
+	score := make(chan int, grid.Size())
 
 	go func(grid *structs.Grid, out chan<- bool) {
 		var wg sync.WaitGroup
@@ -121,7 +127,18 @@ func countVisibleTrees(input <-chan *structs.Grid) <-chan bool {
 		wg.Wait()
 
 		close(out)
-	}(grid, out)
+	}(grid, visible)
 
-	return out
+	go func(grid *structs.Grid, out chan<- int) {
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go grid.CalculateTreesScenicScore(&wg, out)
+
+		wg.Wait()
+
+		close(out)
+	}(grid, score)
+
+	return visible, score
 }

@@ -162,3 +162,112 @@ func (g *Grid) treeIsVisible(wg *sync.WaitGroup, tree *Tree, out chan<- bool) {
 
 	out <- detected
 }
+
+func (g *Grid) CalculateTreesScenicScore(wg *sync.WaitGroup, out chan<- int) {
+	defer wg.Done()
+
+	for _, row := range g.trees {
+		for _, tree := range row {
+			wg.Add(1)
+			go g.treeScenicScore(wg, tree, out)
+		}
+	}
+}
+
+func (g *Grid) treeScenicScore(wg *sync.WaitGroup, tree *Tree, out chan<- int) {
+	defer wg.Done()
+
+	if tree.xCoordinate == 0 || tree.xCoordinate == g.xSize-1 {
+		out <- 0
+		return
+	}
+
+	if tree.yCoordinate == 0 || tree.yCoordinate == g.ySize-1 {
+		out <- 0
+		return
+	}
+
+	scores := make(chan int, 4)
+	score := 1
+
+	go func(scores chan<- int) {
+		var innerWg sync.WaitGroup
+
+		innerWg.Add(1)
+		// Detect West
+		go func(wg *sync.WaitGroup, scores chan<- int) {
+			defer wg.Done()
+			distance := 0
+
+			for i := tree.xCoordinate - 1; i >= 0; i-- {
+				distance++
+
+				if !tree.IsTaller(*g.trees[i][tree.yCoordinate]) {
+					break
+				}
+			}
+
+			scores <- distance
+		}(&innerWg, scores)
+
+		innerWg.Add(1)
+		// Detect East
+		go func(wg *sync.WaitGroup, scores chan<- int) {
+			defer wg.Done()
+			distance := 0
+
+			for i := tree.xCoordinate + 1; i < g.xSize; i++ {
+				distance++
+
+				if !tree.IsTaller(*g.trees[i][tree.yCoordinate]) {
+					break
+				}
+			}
+
+			scores <- distance
+		}(&innerWg, scores)
+
+		innerWg.Add(1)
+		// Detect North
+		go func(wg *sync.WaitGroup, scores chan<- int) {
+			defer wg.Done()
+			distance := 0
+
+			for i := tree.yCoordinate - 1; i >= 0; i-- {
+				distance++
+
+				if !tree.IsTaller(*g.trees[tree.xCoordinate][i]) {
+					break
+				}
+			}
+
+			scores <- distance
+		}(&innerWg, scores)
+
+		innerWg.Add(1)
+		// Detect South
+		go func(wg *sync.WaitGroup, scores chan<- int) {
+			defer wg.Done()
+			distance := 0
+
+			for i := tree.yCoordinate + 1; i < g.ySize; i++ {
+				distance++
+
+				if !tree.IsTaller(*g.trees[tree.xCoordinate][i]) {
+					break
+				}
+			}
+
+			scores <- distance
+		}(&innerWg, scores)
+
+		innerWg.Wait()
+		close(scores)
+	}(scores)
+
+	for ss := range scores {
+		score *= ss
+	}
+
+	out <- score
+}
