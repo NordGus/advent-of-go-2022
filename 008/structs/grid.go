@@ -269,5 +269,7 @@ func (g *Grid) treeScenicScore(wg *sync.WaitGroup, tree *Tree, out chan<- int) {
 		score *= ss
 	}
 
+	tree.scenicScore = score
+
 	out <- score
 }
