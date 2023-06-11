@@ -1,7 +1,5 @@
 package structs
 
-import "sort"
-
 type DirectorySize struct {
 	Directory string
 	Size      uint64
@@ -19,10 +17,4 @@ func (s bySize) Swap(i, j int) {
 
 func (s bySize) Less(i, j int) bool {
 	return s[i].Size < s[j].Size
-}
-
-func sortDirectorySize(s []DirectorySize) []DirectorySize {
-	sort.Sort(bySize(s))
-
-	return s
 }

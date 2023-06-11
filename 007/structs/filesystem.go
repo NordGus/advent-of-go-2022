@@ -1,5 +1,7 @@
 package structs
 
+import "sort"
+
 type FilesystemItemType uint8
 
 const (
@@ -60,7 +62,9 @@ func (fs *Filesystem) DirectorySizes() []DirectorySize {
 		results[i] = DirectorySize{Directory: dirs[i].Path(), Size: dirs[i].Size()}
 	}
 
-	return sortDirectorySize(results)
+	sort.Sort(bySize(results))
+
+	return results
 }
 
 func (fs *Filesystem) PrintFromRoot() {
