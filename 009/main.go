@@ -25,11 +25,11 @@ func main() {
 
 	input := scanInput(file)
 	moves := parseMovements(input)
-	grid := makeMoves(moves)
+	rope := makeMoves(moves)
 
-	g := <-grid
+	r := <-rope
 
-	fmt.Println(g.CountTailUniqueLocations())
+	fmt.Println(r.CountTailUniqueLocations())
 }
 
 func scanInput(input *os.File) <-chan string {
@@ -85,17 +85,17 @@ func parseMovements(input <-chan string) <-chan structs.Movement {
 	return out
 }
 
-func makeMoves(input <-chan structs.Movement) <-chan *structs.Grid {
-	out := make(chan *structs.Grid, 1)
+func makeMoves(input <-chan structs.Movement) <-chan *structs.Rope {
+	out := make(chan *structs.Rope, 1)
 
-	go func(moves <-chan structs.Movement, out chan<- *structs.Grid) {
-		grid := structs.NewGrid()
+	go func(moves <-chan structs.Movement, out chan<- *structs.Rope) {
+		rope := structs.NewRope()
 
 		for move := range moves {
-			grid.Move(move)
+			rope.Move(move)
 		}
 
-		out <- &grid
+		out <- &rope
 
 		close(out)
 	}(input, out)
