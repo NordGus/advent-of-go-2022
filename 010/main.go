@@ -24,23 +24,44 @@ func main() {
 	input := scanInput(file)
 	chips := initChip(input)
 	probes := chips[0].RunProgram(firstProbes())
-	//render := chips[1].RenderScreen()
+	render := chips[1].RenderScreen()
 
 	part1 := make(chan int, 1)
+	part2 := make(chan []string, 1)
 
 	// Part 1 solution
 	go func(input <-chan structs.ProbeResult, out chan<- int) {
 		sum := 0
 
-		for probe := range probes {
-			sum += int(probe.Cycle) * probe.X
+		for in := range input {
+			sum += int(in.Cycle) * in.X
 		}
 
 		out <- sum
 		close(out)
 	}(probes, part1)
 
+	// Part 2 solution
+	go func(input <-chan string, out chan<- []string) {
+		render := make([]string, structs.ScreenVerticalResolution)
+		line := 0
+
+		for in := range input {
+			render[line] = in
+			line++
+		}
+
+		out <- render
+		close(out)
+	}(render, part2)
+
 	fmt.Println("Sum Of Signal Strengths:", <-part1)
+	screen := <-part2
+
+	fmt.Println("CRT Message:")
+	for i := 0; i < len(screen); i++ {
+		fmt.Println(screen[i])
+	}
 }
 
 func scanInput(input *os.File) <-chan string {
