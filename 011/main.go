@@ -14,7 +14,7 @@ import (
 const (
 	inputFileName = "011/input.txt"
 
-	numberOfRounds = 20
+	numberOfRounds = 10_000
 )
 
 func main() {
@@ -30,17 +30,14 @@ func main() {
 	list := prepareMonkeys(monkeys)
 	final := play(list)
 
-	part1 := make([]structs.Monkey, len(final))
-
-	copy(part1, final)
-	structs.SortByItemInspectedCount(part1)
+	structs.SortByItemInspectedCount(final)
 	monkeyBusiness := 1
 
 	for i := 0; i < 2; i++ {
-		monkeyBusiness *= int(part1[i].InspectedItemsCount)
+		monkeyBusiness *= int(final[i].InspectedItemsCount)
 	}
 
-	fmt.Println("Part 1: Level of monkey business:", monkeyBusiness)
+	fmt.Println("Level of monkey business:", monkeyBusiness)
 }
 
 func scanInput(input *os.File) <-chan string {
@@ -88,10 +85,7 @@ func buildMonkeys(input <-chan string) <-chan structs.Monkey {
 			}
 
 			if strings.Contains(str, "Test: ") {
-				err := monkey.SetTest(parseTest(str))
-				if err != nil {
-					panic(err)
-				}
+				monkey.SetTest(parseTest(str))
 				continue
 			}
 
@@ -192,16 +186,14 @@ func parseOldConstOperation(operation string, constant string) func(int) int {
 	}
 }
 
-func parseTest(input string) func(int) bool {
+func parseTest(input string) int {
 	str := strings.Split(input, " ")
 	constant, err := strconv.ParseInt(str[len(str)-1], 10, 0)
 	if err != nil {
 		panic(err)
 	}
 
-	return func(item int) bool {
-		return item%int(constant) == 0
-	}
+	return int(constant)
 }
 
 func parseTestTarget(input string) int {
@@ -225,8 +217,10 @@ func prepareMonkeys(input <-chan structs.Monkey) []structs.Monkey {
 }
 
 func play(monkeys []structs.Monkey) []structs.Monkey {
+	modulo := structs.GetLimiter(monkeys)
+
 	for round := 0; round < numberOfRounds; round++ {
-		structs.PlayRound(monkeys)
+		structs.PlayRound(monkeys, modulo)
 	}
 
 	return monkeys

@@ -9,7 +9,7 @@ import (
 type Monkey struct {
 	items               list
 	operation           func(int) int
-	test                func(int) bool
+	divisibleBy         int
 	testSuccessTarget   int
 	testFailTarget      int
 	InspectedItemsCount uint
@@ -35,14 +35,8 @@ func (m *Monkey) SetOperation(operation func(int) int) error {
 	return nil
 }
 
-func (m *Monkey) SetTest(test func(int) bool) error {
-	if m.test != nil {
-		return errors.New("test already set")
-	}
-
-	m.test = test
-
-	return nil
+func (m *Monkey) SetTest(test int) {
+	m.divisibleBy = test
 }
 
 func (m *Monkey) SetTestSuccessTarget(target int) {
@@ -61,7 +55,7 @@ func (m *Monkey) Print(number int) {
 	fmt.Println("Monkey", number, "items:", m.items.toSlice(), "items inspected", m.InspectedItemsCount)
 }
 
-func PlayRound(monkeys []Monkey) {
+func PlayRound(monkeys []Monkey, modulo int) {
 	for i := 0; i < len(monkeys); i++ {
 		for {
 			item, err := monkeys[i].items.pop()
@@ -70,9 +64,9 @@ func PlayRound(monkeys []Monkey) {
 			}
 			monkeys[i].InspectedItemsCount++
 
-			newItem := monkeys[i].operation(item) / 3
+			newItem := monkeys[i].operation(item) % modulo
 
-			if monkeys[i].test(newItem) {
+			if newItem%monkeys[i].divisibleBy == 0 {
 				monkeys[monkeys[i].testSuccessTarget].items.push(newItem)
 			} else {
 				monkeys[monkeys[i].testFailTarget].items.push(newItem)
@@ -80,6 +74,16 @@ func PlayRound(monkeys []Monkey) {
 
 		}
 	}
+}
+
+func GetLimiter(monkeys []Monkey) int {
+	limiter := 1
+
+	for _, monkey := range monkeys {
+		limiter *= monkey.divisibleBy
+	}
+
+	return limiter
 }
 
 func SortByItemInspectedCount(monkeys []Monkey) []Monkey {
