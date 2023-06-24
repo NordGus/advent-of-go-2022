@@ -28,8 +28,10 @@ func main() {
 
 	g := <-graph
 	fewestStepsBetweenStartToFinish := g.GetFewestStepsFromStartToFinish()
+	scenicRoutSteps := g.GetFewestStepsFromMinHeightToFinish()
 
 	fmt.Println("Fewest Steps Required:", fewestStepsBetweenStartToFinish)
+	fmt.Println("Fewest Steps Required from a square with minimal elevation:", scenicRoutSteps)
 }
 
 func scanInput(input *os.File) <-chan string {

@@ -3,6 +3,8 @@ package structs
 import (
 	"fmt"
 	"math"
+	"sort"
+	"sync"
 )
 
 type nodeRole int
@@ -70,6 +72,39 @@ func (hm *Heightmap) BuildGraph() {
 }
 
 func (hm *Heightmap) GetFewestStepsFromStartToFinish() int {
+	return hm.getFewestStepsBetween(hm.start, hm.end)
+}
+
+func (hm *Heightmap) GetFewestStepsFromMinHeightToFinish() int {
+	var wg sync.WaitGroup
+	stepCounts := make([]int, 0, hm.xSize*hm.ySize)
+	distance := make(chan int)
+
+	for _, n := range hm.nodes {
+		if n.height == 0 {
+			wg.Add(1)
+			go func(wg *sync.WaitGroup, out chan<- int, n *node) {
+				defer wg.Done()
+				out <- hm.getFewestStepsBetween(n, hm.end)
+			}(&wg, distance, n)
+		}
+	}
+
+	go func(wg *sync.WaitGroup, out chan<- int) {
+		wg.Wait()
+		close(out)
+	}(&wg, distance)
+
+	for dist := range distance {
+		stepCounts = append(stepCounts, dist)
+	}
+
+	sort.Ints(stepCounts)
+
+	return stepCounts[0]
+}
+
+func (hm *Heightmap) getFewestStepsBetween(from *node, to *node) int {
 	visited := map[*node]int{}
 	queue := queue{
 		items: make([]queueNode, 0, 1_000),
@@ -79,13 +114,13 @@ func (hm *Heightmap) GetFewestStepsFromStartToFinish() int {
 		visited[n] = math.MaxInt
 	}
 
-	visited[hm.start] = 0
-	queue.enqueue(hm.start, 0)
+	visited[from] = 0
+	queue.enqueue(from, 0)
 
 	for queue.size() > 0 {
 		current, distance := queue.dequeue()
 
-		if current == hm.end {
+		if current == to {
 			queue.clear()
 			break
 		}
@@ -98,5 +133,5 @@ func (hm *Heightmap) GetFewestStepsFromStartToFinish() int {
 		}
 	}
 
-	return visited[hm.end]
+	return visited[to]
 }
