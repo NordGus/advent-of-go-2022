@@ -72,7 +72,7 @@ func (hm *Heightmap) BuildGraph() {
 func (hm *Heightmap) GetFewestStepsFromStartToFinish() int {
 	visited := map[*node]int{}
 	queue := queue{
-		items: make([]queueNode, 0, 1_000_000_000),
+		items: make([]queueNode, 0, 1_000),
 	}
 
 	for _, n := range hm.nodes {
