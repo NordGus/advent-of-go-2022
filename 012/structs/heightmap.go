@@ -107,7 +107,7 @@ func (hm *Heightmap) GetFewestStepsFromMinHeightToFinish() int {
 func (hm *Heightmap) getFewestStepsBetween(from *node, to *node) int {
 	visited := map[*node]int{}
 	queue := queue{
-		items: make([]queueNode, 0, 1_000),
+		items: make([]queueNode, 0, hm.xSize*hm.ySize),
 	}
 
 	for _, n := range hm.nodes {
