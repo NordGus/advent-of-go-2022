@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 )
 
 const (
@@ -21,18 +22,25 @@ func main() {
 	defer file.Close()
 
 	input := scanInput(file)
-	pairs := parsePairs(input)
-	results := comparePackets(pairs)
+	packets := parsePackets(input)
 
-	indexSum := 0
+	packets = append(packets, []any{[]any{2.}}, []any{[]any{6.}})
 
-	for res := range results {
-		if res.inOrder {
-			indexSum += res.index
+	sort.Slice(packets, func(i int, j int) bool {
+		return compare(packets[i], packets[j]) < 0
+	})
+
+	key := 1
+
+	for i, packet := range packets {
+		p := fmt.Sprint(packet)
+
+		if p == "[[2]]" || p == "[[6]]" {
+			key *= i + 1
 		}
 	}
 
-	fmt.Println("Sum of Indexed in Right Order:", indexSum)
+	fmt.Println("The decoder key:", key)
 }
 
 func scanInput(input *os.File) <-chan string {
@@ -51,61 +59,26 @@ func scanInput(input *os.File) <-chan string {
 	return out
 }
 
-func parsePairs(input <-chan string) <-chan [2]any {
-	out := make(chan [2]any)
+func parsePackets(input <-chan string) []any {
+	out := make([]any, 0, 1_000)
 
-	go func(input <-chan string, out chan<- [2]any) {
-		pair := [2]any{}
-		idx := 0
-		for in := range input {
-			if in == "" {
-				out <- pair
-				pair = [2]any{}
-				idx = 0
-				continue
-			}
-
-			// let's use some weird untyped json voodoo magic shenanigans
-			err := json.Unmarshal([]byte(in), &pair[idx])
-			if err != nil {
-				panic(err)
-			}
-
-			idx++
+	for in := range input {
+		if in == "" {
+			continue
 		}
 
-		out <- pair
+		var entry any
 
-		close(out)
-	}(input, out)
-
-	return out
-}
-
-type result struct {
-	index   int
-	inOrder bool
-}
-
-func comparePackets(input <-chan [2]any) <-chan result {
-	out := make(chan result)
-
-	go func(input <-chan [2]any, out chan<- result) {
-		idx := 1
-		for pair := range input {
-			// check if each packet in the pair is in order
-			out <- result{index: idx, inOrder: inOrder(pair[0], pair[1])}
-			idx++
+		// let's use some weird untyped json voodoo magic shenanigans
+		err := json.Unmarshal([]byte(in), &entry)
+		if err != nil {
+			panic(err)
 		}
 
-		close(out)
-	}(input, out)
+		out = append(out, entry)
+	}
 
 	return out
-}
-
-func inOrder(left any, right any) bool {
-	return compare(left, right) <= 0
 }
 
 func compare(left any, right any) int {
