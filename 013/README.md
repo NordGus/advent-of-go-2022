@@ -119,4 +119,4 @@ What are the indices of the pairs that are already **in the right order**? (The 
 
 Determine which pairs of packets are already in the right order. **What is the sum of the indices of those pairs?**
 
-Your puzzle answer was `?`.
+Your puzzle answer was `6568`.
