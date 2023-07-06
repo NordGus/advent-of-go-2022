@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
+
+	"github.com/NordGus/advent-of-go-2022/014/structs"
 )
 
 const (
@@ -19,11 +23,15 @@ func main() {
 
 	defer file.Close()
 
+	cave := structs.NewCave()
 	input := scanInput(file)
+	lines := parseRockFormations(input)
 
-	for in := range input {
-		fmt.Println(in)
+	for in := range lines {
+		cave.AddLine(in...)
 	}
+
+	fmt.Println("How many units of sand come to rest before sand starts flowing into the abyss below? (Part 1):", cave.HowManyUnitsOfSandBeforeOverflowing())
 }
 
 func scanInput(input *os.File) <-chan string {
@@ -38,6 +46,39 @@ func scanInput(input *os.File) <-chan string {
 
 		close(out)
 	}(scanner, out)
+
+	return out
+}
+
+func parseRockFormations(input <-chan string) <-chan [][2]int {
+	out := make(chan [][2]int)
+
+	go func(input <-chan string, out chan<- [][2]int) {
+		for in := range input {
+			raw := strings.Split(in, " -> ")
+			p := make([][2]int, len(raw))
+
+			for i := 0; i < len(raw); i++ {
+				rc := strings.Split(raw[i], ",")
+
+				x, err := strconv.ParseInt(rc[0], 10, 0)
+				if err != nil {
+					panic(err)
+				}
+
+				y, err := strconv.ParseInt(rc[1], 10, 0)
+				if err != nil {
+					panic(err)
+				}
+
+				p[i] = [2]int{int(x), int(y)}
+			}
+
+			out <- p
+		}
+
+		close(out)
+	}(input, out)
 
 	return out
 }
