@@ -1,5 +1,7 @@
 package structs
 
+import "sync"
+
 type Cave struct {
 	sandSource  point
 	rocks       []line
@@ -104,47 +106,49 @@ func (c *Cave) HowManyUnitsOfSandBeforeBlockage() int {
 func (c *Cave) sandCanFallDown(grain point) bool {
 	sensor := point{x: grain.x, y: grain.y + 1}
 
-	if c.sand[sensor] {
-		return false
-	}
-
-	for i := 0; i < len(c.rocks); i++ {
-		if c.rocks[i].detectCollision(&sensor) {
-			return false
-		}
-	}
-
-	return true
+	return !c.pointCollides(sensor)
 }
 
 func (c *Cave) sandCanFallToTheLeft(grain point) bool {
 	sensor := point{x: grain.x - 1, y: grain.y + 1}
 
-	if c.sand[sensor] {
-		return false
-	}
-
-	for i := 0; i < len(c.rocks); i++ {
-		if c.rocks[i].detectCollision(&sensor) {
-			return false
-		}
-	}
-
-	return true
+	return !c.pointCollides(sensor)
 }
 
 func (c *Cave) sandCanFallToTheRight(grain point) bool {
 	sensor := point{x: grain.x + 1, y: grain.y + 1}
 
-	if c.sand[sensor] {
-		return false
+	return !c.pointCollides(sensor)
+}
+
+func (c *Cave) pointCollides(p point) bool {
+	if c.sand[p] {
+		return true
 	}
 
+	collided := false
+	collisions := make(chan bool, len(c.rocks)/2)
+	var wg sync.WaitGroup
+
 	for i := 0; i < len(c.rocks); i++ {
-		if c.rocks[i].detectCollision(&sensor) {
-			return false
+		wg.Add(1)
+
+		go func(wg *sync.WaitGroup, out chan<- bool, l *line, p *point) {
+			defer wg.Done()
+			out <- l.detectCollision(p)
+		}(&wg, collisions, &c.rocks[i], &p)
+	}
+
+	go func(wg *sync.WaitGroup, out chan<- bool) {
+		wg.Wait()
+		close(out)
+	}(&wg, collisions)
+
+	for collision := range collisions {
+		if collision {
+			collided = true
 		}
 	}
 
-	return true
+	return collided
 }
