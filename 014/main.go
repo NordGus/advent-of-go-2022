@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/NordGus/advent-of-go-2022/014/structs"
 )
@@ -31,7 +32,10 @@ func main() {
 		cave.AddLine(in...)
 	}
 
-	fmt.Println("How many units of sand come to rest before sand starts flowing into the abyss below? (Part 1):", cave.HowManyUnitsOfSandBeforeOverflowing())
+	start1 := time.Now()
+	fmt.Printf("How many units of sand come to rest before sand starts flowing into the abyss below? (Part 1): %v (took %s)\n", cave.HowManyUnitsOfSandBeforeOverflowing(), time.Since(start1))
+	start2 := time.Now()
+	fmt.Printf("How many units of sand come to rest? (Part 2): %v (took %s)", cave.HowManyUnitsOfSandBeforeBlockage(), time.Since(start2))
 }
 
 func scanInput(input *os.File) <-chan string {

@@ -11,7 +11,7 @@ func NewCave() Cave {
 	return Cave{
 		sandSource: point{x: 500, y: 0},
 		rocks:      make([]line, 0, 1_000),
-		sand:       make(map[point]bool, 1_000),
+		sand:       make(map[point]bool, 10_000),
 	}
 }
 
@@ -55,6 +55,43 @@ func (c *Cave) HowManyUnitsOfSandBeforeOverflowing() int {
 		if c.sandCanFallToTheRight(grain) {
 			grain = point{x: grain.x + 1, y: grain.y + 1}
 			continue
+		}
+
+		c.sand[grain] = true
+		grain = c.sandSource
+	}
+
+	return len(c.sand)
+}
+
+func (c *Cave) HowManyUnitsOfSandBeforeBlockage() int {
+	grain := c.sandSource
+
+	for {
+		if grain.y == c.lowestPoint+1 {
+			c.sand[grain] = true
+			grain = c.sandSource
+			continue
+		}
+
+		if c.sandCanFallDown(grain) {
+			grain = point{x: grain.x, y: grain.y + 1}
+			continue
+		}
+
+		if c.sandCanFallToTheLeft(grain) {
+			grain = point{x: grain.x - 1, y: grain.y + 1}
+			continue
+		}
+
+		if c.sandCanFallToTheRight(grain) {
+			grain = point{x: grain.x + 1, y: grain.y + 1}
+			continue
+		}
+
+		if grain == c.sandSource {
+			c.sand[grain] = true
+			break
 		}
 
 		c.sand[grain] = true
