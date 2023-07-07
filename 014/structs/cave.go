@@ -28,12 +28,31 @@ func (c *Cave) AddLine(points ...[2]int) {
 			y: points[i][1],
 		}
 
+		if i == 0 {
+			l.highestPoint = l.points[i].y
+			l.lowestPoint = l.points[i].y
+			l.westernPoint = l.points[i].x
+			l.easternPoint = l.points[i].x
+		}
+
 		if l.points[i].y > c.lowestPoint {
 			c.lowestPoint = l.points[i].y
 		}
 
 		if l.points[i].y > l.lowestPoint {
 			l.lowestPoint = l.points[i].y
+		}
+
+		if l.points[i].y < l.highestPoint {
+			l.highestPoint = l.points[i].y
+		}
+
+		if l.points[i].x > l.easternPoint {
+			l.easternPoint = l.points[i].x
+		}
+
+		if l.points[i].x < l.westernPoint {
+			l.westernPoint = l.points[i].x
 		}
 	}
 

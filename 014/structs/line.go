@@ -1,14 +1,18 @@
 package structs
 
 type line struct {
-	points      []point
-	lowestPoint int
+	points       []point
+	lowestPoint  int
+	highestPoint int
+	westernPoint int
+	easternPoint int
 }
 
 func (l *line) detectCollision(p *point) bool {
 	buffer := 0.1
 
-	if p.y > l.lowestPoint {
+	// ignore points that are nowhere near the line
+	if p.y > l.lowestPoint || p.y < l.highestPoint || p.x < l.westernPoint || p.x > l.easternPoint {
 		return false
 	}
 
