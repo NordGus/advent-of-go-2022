@@ -15,6 +15,8 @@ import (
 const (
 	inputFileName    = "015/input.txt"
 	part1ComparisonY = 2_000_000
+	part2LowerLimit  = 0
+	part2UpperLimit  = 4_000_000
 )
 
 func main() {
@@ -38,13 +40,23 @@ func main() {
 		grid.AddSensor(sensor[0], sensor[1], beacon[0], beacon[1])
 	}
 
-	start1 := time.Now()
+	start := time.Now()
 	part1, err := grid.HowManyPositionsCannotContainABeaconAt(part1ComparisonY)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Part 1: In the row where y=%v, how many positions cannot contain a beacon?: %v (took %s)\n", part1ComparisonY, part1, time.Since(start1))
+	fmt.Printf("Part 1: In the row where y=%v, how many positions cannot contain a beacon?: %v (took %s)\n", part1ComparisonY, part1, time.Since(start))
+
+	start = time.Now()
+
+	fmt.Printf(
+		"Part 2: Find the only possible position for the distress beacon for x and y between %v and %v. What is its tuning frequency?: %v (took %s)\n",
+		part2LowerLimit,
+		part2UpperLimit,
+		0,
+		time.Since(start),
+	)
 }
 
 func scanInput(input *os.File) <-chan string {
