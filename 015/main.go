@@ -49,12 +49,16 @@ func main() {
 	fmt.Printf("Part 1: In the row where y=%v, how many positions cannot contain a beacon?: %v (took %s)\n", part1ComparisonY, part1, time.Since(start))
 
 	start = time.Now()
+	part2, err := grid.TuningFrequencyOfOfDistressBeacon(part2LowerLimit, part2UpperLimit)
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Printf(
 		"Part 2: Find the only possible position for the distress beacon for x and y between %v and %v. What is its tuning frequency?: %v (took %s)\n",
 		part2LowerLimit,
 		part2UpperLimit,
-		0,
+		part2,
 		time.Since(start),
 	)
 }
