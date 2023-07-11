@@ -1,5 +1,7 @@
 package structs
 
+import "sort"
+
 type rang struct {
 	start int
 	end   int
@@ -21,4 +23,33 @@ func (r *rang) merge(r2 rang) rang {
 	}
 
 	return nr
+}
+
+type sortByStart []rang
+
+func (a sortByStart) Len() int           { return len(a) }
+func (a sortByStart) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a sortByStart) Less(i, j int) bool { return a[i].start < a[j].start }
+
+type mergeable []rang
+
+func (m mergeable) merge() []rang {
+	merged := make([]rang, 0, len(m))
+	r := m[0]
+
+	for i := 1; i < len(m); i++ {
+		if r.canMerge(m[i]) {
+			r = r.merge(m[i])
+			continue
+		}
+
+		merged = append(merged, r)
+		r = m[i]
+	}
+
+	merged = append(merged, r)
+
+	sort.Sort(sortByStart(merged))
+
+	return merged
 }

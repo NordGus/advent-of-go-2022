@@ -79,25 +79,16 @@ func (sg *Grid) HowManyPositionsCannotContainABeaconAt(y int) (uint, error) {
 			continue
 		}
 
-		// catch first iteration
-		if minX == -math.MaxInt {
-			minX = start.x
-		}
-
-		if maxX == math.MaxInt {
-			maxX = start.x
-		}
-
 		remainder := int(math.Abs(float64(ds - device.distanceToClosestBeacon)))
 
 		left := start.x - remainder
 		right := start.x + remainder
 
-		if minX > left {
+		if minX > left || minX == -math.MaxInt {
 			minX = left
 		}
 
-		if maxX < right {
+		if maxX < right || maxX == math.MaxInt {
 			maxX = right
 		}
 
@@ -170,35 +161,16 @@ func (sg *Grid) TuningFrequencyOfOfDistressBeacon(lower int, upper int) (uint, e
 					ranges = append(ranges, rang{start: left, end: right})
 				}
 
-				sort.Slice(ranges, func(i, j int) bool {
-					return (ranges[i].start < ranges[j].start)
-				})
+				sort.Sort(sortByStart(ranges))
 
-				fusions := make([]rang, 0, len(ranges))
-				fusion := ranges[0]
+				merged := mergeable(ranges).merge()
 
-				for i := 1; i < len(ranges); i++ {
-					if fusion.canMerge(ranges[i]) {
-						fusion = fusion.merge(ranges[i])
-						continue
+				if len(merged) > 1 {
+					if len(merged) > 2 {
+						fmt.Println(merged)
 					}
 
-					fusions = append(fusions, fusion)
-					fusion = ranges[i]
-				}
-
-				fusions = append(fusions, fusion)
-
-				sort.Slice(fusions, func(i, j int) bool {
-					return (fusions[i].start < fusions[j].start)
-				})
-
-				if len(fusions) > 1 {
-					if len(fusions) > 2 {
-						fmt.Println(fusions)
-					}
-
-					location.x = fusions[0].end + 1
+					location.x = merged[0].end + 1
 				}
 
 				select {
