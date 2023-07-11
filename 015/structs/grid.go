@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"sort"
 	"sync"
 )
 
@@ -71,9 +72,10 @@ func (sg *Grid) HowManyPositionsCannotContainABeaconAt(y int) (uint, error) {
 
 	for _, device := range sg.sensors {
 		start := coordinates{x: device.location.x, y: y}
+		ds := device.taxiCapDistanceTo(start)
 
 		// Ignore sensors which exclusion zone is not dissected by the line defined by the parameter y
-		if device.taxiCapDistanceTo(start) > device.distanceToClosestBeacon {
+		if ds > device.distanceToClosestBeacon {
 			continue
 		}
 
@@ -86,27 +88,19 @@ func (sg *Grid) HowManyPositionsCannotContainABeaconAt(y int) (uint, error) {
 			maxX = start.x
 		}
 
-		// find left dissection point point
-		left := start
+		remainder := int(math.Abs(float64(ds - device.distanceToClosestBeacon)))
 
-		for device.distanceToClosestBeacon >= device.taxiCapDistanceTo(left) {
-			if minX > left.x {
-				minX = left.x
-			}
+		left := start.x - remainder
+		right := start.x + remainder
 
-			left = coordinates{x: left.x - 1, y: left.y}
+		if minX > left {
+			minX = left
 		}
 
-		// find right dissection point point
-		right := start
-
-		for device.distanceToClosestBeacon >= device.taxiCapDistanceTo(right) {
-			if maxX < right.x {
-				maxX = right.x
-			}
-
-			right = coordinates{x: right.x + 1, y: right.y}
+		if maxX < right {
+			maxX = right
 		}
+
 	}
 
 	if minX == -math.MaxInt && maxX == math.MaxInt {
@@ -143,58 +137,68 @@ func (sg *Grid) TuningFrequencyOfOfDistressBeacon(lower int, upper int) (uint, e
 			sem <- true
 
 			go func(ctx context.Context, wg *sync.WaitGroup, sem chan bool, results chan<- coordinates, y int, lower int, upper int) {
-				defer wg.Done()
-				defer func() {
+				defer func(wg *sync.WaitGroup, sem chan bool) {
+					wg.Done()
 					<-sem
-				}()
+				}(wg, sem)
 
 				location := coordinates{x: -1, y: y}
-				line := make([]bool, upper+1)
+				ranges := make([]rang, 0, len(sg.sensors))
 
 				for _, device := range sg.sensors {
 					start := coordinates{x: device.location.x, y: y}
+					ds := device.taxiCapDistanceTo(start)
 
 					// Ignore sensors which exclusion zone is not dissected by the line defined by the parameter y
-					if device.taxiCapDistanceTo(start) > device.distanceToClosestBeacon {
+					if ds > device.distanceToClosestBeacon {
 						continue
 					}
 
-					// find left dissection point point
-					left := start
+					remainder := int(math.Abs(float64(ds - device.distanceToClosestBeacon)))
 
-					for device.distanceToClosestBeacon > device.taxiCapDistanceTo(left) && left.x > lower {
-						left = coordinates{x: left.x - 1, y: left.y}
+					left := start.x - remainder
+					right := start.x + remainder
+
+					if left < lower {
+						left = lower
 					}
 
-					// find right dissection point point
-					right := start
-
-					for device.distanceToClosestBeacon > device.taxiCapDistanceTo(right) && right.x < upper {
-						right = coordinates{x: right.x + 1, y: right.y}
+					if right > upper {
+						right = upper
 					}
 
-					if left.x < lower {
-						left.x = lower
-					}
-
-					if right.x > upper {
-						right.x = upper
-					}
-
-					for i := left.x; i <= right.x; i++ {
-						if line[i] {
-							continue
-						}
-
-						line[i] = true
-					}
+					ranges = append(ranges, rang{start: left, end: right})
 				}
 
-				for i := 0; i < len(line); i++ {
-					if !line[i] {
-						location.x = i
-						break
+				sort.Slice(ranges, func(i, j int) bool {
+					return (ranges[i].start < ranges[j].start)
+				})
+
+				fusions := make([]rang, 0, len(ranges))
+				fusion := ranges[0]
+
+				for i := 1; i < len(ranges); i++ {
+					if fusion.canMerge(ranges[i]) {
+						fusion = fusion.merge(ranges[i])
+						continue
 					}
+
+					fusions = append(fusions, fusion)
+					fusion = ranges[i]
+				}
+
+				fusions = append(fusions, fusion)
+
+				sort.Slice(fusions, func(i, j int) bool {
+					return (fusions[i].start < fusions[j].start)
+				})
+
+				if len(fusions) > 1 {
+					if len(fusions) > 2 {
+						fmt.Println(fusions)
+					}
+
+					location.x = fusions[0].end + 1
 				}
 
 				select {
@@ -207,13 +211,15 @@ func (sg *Grid) TuningFrequencyOfOfDistressBeacon(lower int, upper int) (uint, e
 	}(ctx, wg, sem, results, workers, lower, upper, finished)
 
 	go func(wg *sync.WaitGroup, sem chan bool, out chan coordinates) {
+		sem <- true
 		wg.Wait()
 		close(sem)
 		close(out)
+		<-sem
 	}(wg, sem, results)
 
 	for result := range results {
-		if result.x > -1 {
+		if result.x > -1 && sg.isDistressBeacon(result) {
 			finished.Lock()
 			finished.stopped = true
 			finished.Unlock()
@@ -222,4 +228,14 @@ func (sg *Grid) TuningFrequencyOfOfDistressBeacon(lower int, upper int) (uint, e
 	}
 
 	return 0, fmt.Errorf("location not found for distress beacon in area where x and y between %v and %v", lower, upper)
+}
+
+func (sg *Grid) isDistressBeacon(location coordinates) bool {
+	for _, device := range sg.sensors {
+		if device.taxiCapDistanceTo(location) <= device.distanceToClosestBeacon {
+			return false
+		}
+	}
+
+	return true
 }
