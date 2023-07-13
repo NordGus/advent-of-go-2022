@@ -9,9 +9,7 @@ import (
 type step struct {
 	from      valveName
 	to        valveName
-	pressure  int64
 	visitedAt int64
-	openValve bool
 }
 
 // sortByTime is simple sorting interface to sort a slice representation of a path trough the Volcano graph by the moment each vertex is visited
@@ -21,10 +19,19 @@ func (a sortByTime) Len() int           { return len(a) }
 func (a sortByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a sortByTime) Less(i, j int) bool { return a[i].visitedAt < a[j].visitedAt }
 
-type path map[valveName]*step
+type path map[valveName]step
 
-func (p path) pathTo(destination *valve) path {
-	out := make(path, len(p))
+func (p path) pathTo(destination valveName) []step {
+	out := make([]step, 0, len(p))
+
+	current := p[destination]
+
+	for current.from != "" {
+		out = append(out, p[current.to])
+		current = p[current.from]
+	}
+
+	sort.Sort(sortByTime(out))
 
 	return out
 }
@@ -32,7 +39,7 @@ func (p path) pathTo(destination *valve) path {
 func (p path) Print() {
 	steps := make([]step, 0, len(p))
 	for _, s := range p {
-		steps = append(steps, *s)
+		steps = append(steps, s)
 	}
 
 	sort.Sort(sortByTime(steps))

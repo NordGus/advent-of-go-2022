@@ -74,7 +74,52 @@ func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
 		trip[from.index] = make([]*alternative, len(v.valves))
 
 		for _, to := range v.valves {
-			trip[from.index][to.index] = &alternative{i: from, j: to}
+			trip[from.index][to.index] = &alternative{
+				i:             *from,
+				j:             *to,
+				timeRemaining: timeLimit,
+			}
+		}
+	}
+
+	// build solution
+	for i := 0; i < len(v.valves); i++ {
+		for j := 0; j < len(v.valves); j++ {
+			current := trip[i][j]
+			remaining := current.timeRemaining
+			pressure := current.pressure
+			opened := make(map[valveName]bool, len(v.valves))
+
+			path := current.i.shortestPath.pathTo(current.j.name)[1:]
+
+			for i := 0; i < len(path); i++ {
+				val := v.valves[path[i].to]
+				remaining--
+
+				if val.flowRate > 0 && !opened[val.name] {
+					remaining--
+					opened[val.name] = true
+					pressure += val.flowRate * remaining
+				}
+			}
+
+			if i == 0 {
+				current.path = path
+				current.pressure = pressure
+				current.timeRemaining = remaining
+				current.openedValves = opened
+
+				fmt.Println(current.i.name, current.j.name, current.path, current.pressure, current.timeRemaining, current.openedValves)
+				continue
+			}
+
+			if j == 0 {
+				continue
+			}
+		}
+
+		if i == 0 {
+			break
 		}
 	}
 
@@ -96,57 +141,35 @@ func (v *Volcano) fillValvesShortestPath(wg *sync.WaitGroup) {
 }
 
 func (v *Volcano) exploreFrom(start *valve) path {
-	var startTime int64 = 0
-	var pressure int64 = 0
-
 	visited := make(map[valveName]bool, len(v.valves))
 	moveQueue := make([]step, 0, len(v.valves))
-	out := make(path, len(v.valves))
-
-	if start.flowRate > 0 {
-		startTime++
-		pressure += start.flowRate
-	}
-
-	for name := range v.valves {
-		out[name] = &step{
-			from:      "-",
-			to:        name,
-			pressure:  pressure,
-			visitedAt: startTime,
-			openValve: name == start.name && start.flowRate > 0,
-		}
-	}
+	path := make(path, len(v.valves))
 
 	visited[start.name] = true
-	moveQueue = append(moveQueue, *out[start.name])
+	path[start.name] = step{from: "-", to: start.name}
+	moveQueue = append(moveQueue, path[start.name])
 
 	for len(moveQueue) > 0 {
-		current := moveQueue[0].to
-		elapsed := moveQueue[0].visitedAt
+		current := moveQueue[0]
 		moveQueue = moveQueue[1:]
 
-		for _, neighbor := range v.valves[current].neighbors {
+		for _, neighbor := range v.valves[current.to].neighbors {
 			if visited[neighbor.name] {
 				continue
 			}
 
 			visited[neighbor.name] = true
 
-			move := out[neighbor.name]
-
-			move.from = current
-			move.visitedAt = elapsed + 1
-
-			if neighbor.flowRate > 0 {
-				move.pressure += neighbor.flowRate
-				move.openValve = true
-				move.visitedAt++
+			move := step{
+				from:      current.to,
+				to:        neighbor.name,
+				visitedAt: current.visitedAt + 1,
 			}
 
-			moveQueue = append(moveQueue, *move)
+			moveQueue = append(moveQueue, move)
+			path[neighbor.name] = move
 		}
 	}
 
-	return out
+	return path
 }

@@ -1,11 +1,12 @@
 package structs
 
 type alternative struct {
-	path          path
+	path          []step
 	pressure      int64
 	timeRemaining int64
-	i             *valve
-	j             *valve
+	openedValves  map[valveName]bool
+	i             valve
+	j             valve
 }
 
 type trip [][]*alternative
