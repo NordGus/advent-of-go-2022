@@ -5,10 +5,25 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/NordGus/advent-of-go-2022/016/structs"
 )
 
 const (
 	inputFileName = "016/input.txt"
+)
+
+type parsedData struct {
+	name      string
+	rate      int64
+	neighbors []string
+}
+
+const (
+	volcanoTimer int64 = 30
 )
 
 func main() {
@@ -19,11 +34,19 @@ func main() {
 
 	defer file.Close()
 
-	input := scanInput(file)
+	volcano := structs.NewVolcano()
 
-	for in := range input {
-		fmt.Println(in)
+	input := scanInput(file)
+	data := parseInput(input)
+
+	for in := range data {
+		volcano.AddValve(in.name, in.rate, in.neighbors)
 	}
+
+	start := time.Now()
+	part1 := volcano.ReleaseTheMostPressureWithin(volcanoTimer)
+
+	fmt.Printf("Part 1: What is the most pressure you can release? %v (took %v)\n", part1, time.Since(start))
 }
 
 func scanInput(input *os.File) <-chan string {
@@ -38,6 +61,36 @@ func scanInput(input *os.File) <-chan string {
 
 		close(out)
 	}(scanner, out)
+
+	return out
+}
+
+func parseInput(input <-chan string) <-chan parsedData {
+	out := make(chan parsedData)
+
+	go func(input <-chan string, out chan<- parsedData) {
+		for in := range input {
+			name := strings.Split(strings.ReplaceAll(in, "Valve ", ""), " has flow ")[0]
+			unparsedRate := strings.Split(strings.Split(in, " has flow rate=")[1], "; ")[0]
+			neighbors := strings.Split(strings.Split(strings.ReplaceAll(in, "leads to valve", "lead to valves"), " lead to valves ")[1], ", ")
+
+			data := parsedData{
+				name:      name,
+				neighbors: neighbors,
+			}
+
+			rate, err := strconv.ParseInt(unparsedRate, 10, 0)
+			if err != nil {
+				panic(err)
+			}
+
+			data.rate = rate
+
+			out <- data
+		}
+
+		close(out)
+	}(input, out)
 
 	return out
 }
