@@ -1,10 +1,15 @@
 package structs
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
+// Volcano is a simple graph representation of problem's map layout
 type Volcano struct {
-	valves map[valveName]*valve
-	start  *valve
+	valves     map[valveName]*valve
+	start      *valve
+	valveIndex int
 }
 
 func NewVolcano() Volcano {
@@ -15,7 +20,6 @@ func NewVolcano() Volcano {
 }
 
 func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
-	isStart := len(v.valves) == 0
 	vName := valveName(name)
 	val := v.valves[vName]
 
@@ -23,9 +27,11 @@ func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
 		val = &valve{
 			name:      vName,
 			neighbors: make(map[valveName]*valve, defaultNeighborsMapSize),
+			index:     v.valveIndex,
 		}
 
 		v.valves[vName] = val
+		v.valveIndex++
 	}
 
 	val.flowRate = flowRate
@@ -38,55 +44,41 @@ func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
 			neighbor = &valve{
 				name:      neighborValveName,
 				neighbors: make(map[valveName]*valve, defaultNeighborsMapSize),
+				index:     v.valveIndex,
 			}
 
 			v.valves[neighborValveName] = neighbor
+			v.valveIndex++
 		}
 
 		val.neighbors[neighborValveName] = neighbor
 	}
 
-	if isStart {
+	if val.index == 0 {
 		v.start = val
 	}
 }
 
 func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
+	var out *alternative
 	wg := new(sync.WaitGroup)
+	trip := make(trip, len(v.valves))
 
 	// fill all valves' shortest paths
 	wg.Add(1)
 	go v.fillValvesShortestPath(wg)
 	wg.Wait()
 
-	table := make(map[*valve]map[*valve]bool, len(v.valves))
-
+	// build trip starting state
 	for _, from := range v.valves {
-		table[from] = make(map[*valve]bool, len(v.valves))
-
-		from.shortestPath.Print()
+		trip[from.index] = make([]*alternative, len(v.valves))
 
 		for _, to := range v.valves {
-			table[from][to] = true
+			trip[from.index][to.index] = &alternative{i: from, j: to}
 		}
 	}
 
-	// for remaining > 0 {
-	// 	segment := v.nextMoves(current, pressure, remaining)
-
-	// 	if len(segment) == 0 {
-	// 		break
-	// 	}
-
-	// 	path = append(path, segment...)
-	// 	last := path[len(path)-1]
-
-	// 	current = v.valves[last.to]
-	// 	remaining = last.visitedAt
-	// 	pressure = last.pressure
-
-	// 	current.open()
-	// }
+	fmt.Println(out)
 
 	return 0
 }
