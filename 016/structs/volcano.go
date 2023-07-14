@@ -27,14 +27,14 @@ func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
 		val = &valve{
 			name:      vName,
 			neighbors: make(map[valveName]*valve, defaultNeighborsMapSize),
-			index:     v.valveIndex,
 		}
 
 		v.valves[vName] = val
-		v.valveIndex++
 	}
 
 	val.flowRate = flowRate
+	val.index = v.valveIndex
+	v.valveIndex++
 
 	for i := 0; i < len(neighbors); i++ {
 		neighborValveName := valveName(neighbors[i])
@@ -44,11 +44,9 @@ func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
 			neighbor = &valve{
 				name:      neighborValveName,
 				neighbors: make(map[valveName]*valve, defaultNeighborsMapSize),
-				index:     v.valveIndex,
 			}
 
 			v.valves[neighborValveName] = neighbor
-			v.valveIndex++
 		}
 
 		val.neighbors[neighborValveName] = neighbor
@@ -60,7 +58,7 @@ func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
 }
 
 func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
-	var out *alternative
+	var out *room
 	wg := new(sync.WaitGroup)
 	trip := make(trip, len(v.valves))
 
@@ -71,13 +69,13 @@ func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
 
 	// build trip starting state
 	for _, from := range v.valves {
-		trip[from.index] = make([]*alternative, len(v.valves))
+		trip[from.index] = make([]*room, len(v.valves))
 
 		for _, to := range v.valves {
-			trip[from.index][to.index] = &alternative{
-				i:             *from,
-				j:             *to,
+			trip[from.index][to.index] = &room{
+				valve:         *to,
 				timeRemaining: timeLimit,
+				openedValves:  make(map[valveName]bool, len(v.valves)),
 			}
 		}
 	}
@@ -85,45 +83,65 @@ func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
 	// build solution
 	for i := 0; i < len(v.valves); i++ {
 		for j := 0; j < len(v.valves); j++ {
-			current := trip[i][j]
-			remaining := current.timeRemaining
-			pressure := current.pressure
-			opened := make(map[valveName]bool, len(v.valves))
+			var top *room
+			var diagonal *room
 
-			path := current.i.shortestPath.pathTo(current.j.name)[1:]
+			left := trip[i][0]
 
-			for i := 0; i < len(path); i++ {
-				val := v.valves[path[i].to]
-				remaining--
-
-				if val.flowRate > 0 && !opened[val.name] {
-					remaining--
-					opened[val.name] = true
-					pressure += val.flowRate * remaining
-				}
+			if i == 0 && j == 0 {
+				top = trip[i][j]
+				diagonal = trip[i][j]
 			}
 
-			if i == 0 {
-				current.path = path
-				current.pressure = pressure
-				current.timeRemaining = remaining
-				current.openedValves = opened
-
-				fmt.Println(current.i.name, current.j.name, current.path, current.pressure, current.timeRemaining, current.openedValves)
-				continue
+			if i == 0 && j > 0 {
+				top = trip[i][0]
+				diagonal = trip[i][0]
 			}
 
-			if j == 0 {
-				continue
+			if i > 0 && j == 0 {
+				left = trip[j][i]
+				diagonal = trip[i-1][j]
 			}
-		}
 
-		if i == 0 {
-			break
+			if top == nil {
+				top = trip[i-1][j]
+			}
+
+			if diagonal == nil {
+				diagonal = trip[i-1][j-1]
+			}
+
+			fromLeft := trip[i][j].travel(*left, v)
+			fromTop := trip[i][j].travel(*top, v)
+			fromDiagonal := trip[i][j].travel(*diagonal, v)
+
+			if (fromLeft.pressureReleased * fromLeft.timeRemaining) > (trip[i][j].pressureReleased * trip[i][j].timeRemaining) {
+				trip[i][j] = &fromLeft
+			}
+
+			if (fromTop.pressureReleased * fromTop.timeRemaining) > (trip[i][j].pressureReleased * trip[i][j].timeRemaining) {
+				trip[i][j] = &fromTop
+			}
+
+			if (fromDiagonal.pressureReleased * fromDiagonal.timeRemaining) > (trip[i][j].pressureReleased * trip[i][j].timeRemaining) {
+				trip[i][j] = &fromDiagonal
+			}
+
+			if i == 1 {
+				fmt.Printf("current[%v][%v] %v\n", i, j, trip[i][j].valve.name)
+				fmt.Printf("\t%v\n", trip[i][j].path)
+				fmt.Printf("\tpressureReleased %v\n", trip[i][j].pressureReleased)
+				fmt.Printf("\ttimeRemaining %v\n", trip[i][j].timeRemaining)
+				fmt.Printf("\topenedValves %v\n", trip[i][j].openedValves)
+			}
+
+			if out == nil || trip[i][j].pressureReleased > out.pressureReleased {
+				out = trip[i][j]
+			}
 		}
 	}
 
-	fmt.Println(out)
+	fmt.Println(out.pressureReleased)
 
 	return 0
 }
