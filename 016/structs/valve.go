@@ -13,6 +13,7 @@ type valve struct {
 	flowRate     int64
 	tunnels      map[valveName]tunnel
 	shortestPath path
+	index        uint32
 }
 
 type tunnel struct {

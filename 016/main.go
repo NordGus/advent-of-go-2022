@@ -44,9 +44,10 @@ func main() {
 		volcano.ParseValve(in.name, in.rate, in.neighbors)
 	}
 
-	volcano = volcano.Simplify()
+	volcano1 := volcano.Simplify()
+
 	start1 := time.Now()
-	part1 := volcano.ReleaseTheMostPressureWithin(volcanoTimer)
+	part1 := volcano1.ReleaseTheMostPressureWithin(volcanoTimer)
 	fmt.Printf("Part 1: What is the most pressure you can release? %v (took %v)\n", part1, time.Since(start1))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))

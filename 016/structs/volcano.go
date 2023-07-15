@@ -1,13 +1,21 @@
 package structs
 
 import (
-	"fmt"
+	"math"
 )
+
+type state struct {
+	timeRemaining int64
+	valve         valveName
+	mask          uint32
+}
 
 // Volcano is a simple graph representation of problem's map layout
 type Volcano struct {
-	valves map[valveName]*valve
-	start  *valve
+	valves   map[valveName]*valve
+	start    *valve
+	cache    map[state]*float64
+	openable []*valve
 }
 
 func NewVolcano() Volcano {
@@ -54,18 +62,53 @@ func (v *Volcano) ParseValve(name string, flowRate int64, neighbors []string) {
 }
 
 func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
-	fmt.Println(len(v.valves), timeLimit)
+	v.cache = make(map[state]*float64, len(v.valves)*len(v.valves))
 
-	return 0
+	out := v.exploreDepthFirstSearchMaxPressure(timeLimit, v.start, 0)
+
+	return int64(out)
 }
 
-func (v *Volcano) exploreBreathFirstFrom(start valveName) path {
+func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source *valve, mask uint32) float64 {
+	state := state{timeRemaining: timeRemaining, valve: source.name, mask: mask}
+
+	if v.cache[state] != nil {
+		return *v.cache[state]
+	}
+
+	var maxPressure float64 = 0
+
+	for name, val := range v.valves {
+		if name == source.name {
+			continue
+		}
+
+		bit := uint32(1) << val.index
+
+		if mask&bit != 0 {
+			continue
+		}
+
+		remaining := timeRemaining - source.shortestPath.distanceTo(name) - 1
+
+		if remaining <= 0 {
+			continue
+		}
+
+		maxPressure = math.Max(maxPressure, v.exploreDepthFirstSearchMaxPressure(remaining, val, mask|bit)+float64(val.flowRate*remaining))
+	}
+
+	v.cache[state] = &maxPressure
+	return maxPressure
+}
+
+func (v *Volcano) exploreBreathFirstSearch(start valveName) path {
 	visited := make(map[valveName]bool, len(v.valves))
 	moveQueue := make([]step, 0, len(v.valves))
 	path := make(path, len(v.valves))
 
 	visited[start] = true
-	path[start] = step{from: "-", to: start}
+	path[start] = step{from: "-", to: start, distance: 0}
 	moveQueue = append(moveQueue, path[start])
 
 	for len(moveQueue) > 0 {
@@ -83,6 +126,7 @@ func (v *Volcano) exploreBreathFirstFrom(start valveName) path {
 				from:      current.to,
 				to:        neighbor.to.name,
 				visitedAt: current.visitedAt + 1,
+				distance:  current.distance + neighbor.travelTime,
 			}
 
 			moveQueue = append(moveQueue, move)
@@ -93,9 +137,10 @@ func (v *Volcano) exploreBreathFirstFrom(start valveName) path {
 	return path
 }
 
-func (v *Volcano) Simplify() Volcano {
+func (v *Volcano) Simplify() *Volcano {
 	volcano := &Volcano{
-		valves: make(map[valveName]*valve, len(v.valves)),
+		valves:   make(map[valveName]*valve, len(v.valves)),
+		openable: make([]*valve, 0, len(v.valves)-1),
 	}
 
 	for name, val := range v.valves {
@@ -105,6 +150,7 @@ func (v *Volcano) Simplify() Volcano {
 				flowRate: val.flowRate,
 				tunnels:  make(map[valveName]tunnel, len(v.valves)),
 			}
+
 		}
 
 		if name == "AA" {
@@ -112,8 +158,10 @@ func (v *Volcano) Simplify() Volcano {
 		}
 	}
 
+	var index uint32 = 0
+
 	for name, val := range volcano.valves {
-		paths := v.exploreBreathFirstFrom(name)
+		paths := v.exploreBreathFirstSearch(name)
 
 		for neighborName, neighbor := range volcano.valves {
 			if name == neighborName {
@@ -141,11 +189,17 @@ func (v *Volcano) Simplify() Volcano {
 				}
 			}
 		}
+
+		if name != "AA" {
+			val.index = index
+			volcano.openable = append(volcano.openable, val)
+			index++
+		}
 	}
 
 	for name, val := range volcano.valves {
-		val.shortestPath = volcano.exploreBreathFirstFrom(name)
+		val.shortestPath = volcano.exploreBreathFirstSearch(name)
 	}
 
-	return *volcano
+	return volcano
 }

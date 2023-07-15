@@ -1,7 +1,6 @@
 package structs
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -10,6 +9,7 @@ type step struct {
 	from      valveName
 	to        valveName
 	visitedAt int64
+	distance  int64
 }
 
 // sortByTime is simple sorting interface to sort a slice representation of a path trough the Volcano graph by the moment each vertex is visited
@@ -43,13 +43,6 @@ func (p path) pathTo(destination valveName) []step {
 	return out
 }
 
-func (p path) Print() {
-	steps := make([]step, 0, len(p))
-	for _, s := range p {
-		steps = append(steps, s)
-	}
-
-	sort.Sort(sortByTime(steps))
-
-	fmt.Println(steps)
+func (p path) distanceTo(destination valveName) int64 {
+	return p[destination].distance
 }
