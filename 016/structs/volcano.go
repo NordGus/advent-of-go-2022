@@ -1,9 +1,5 @@
 package structs
 
-import (
-	"math"
-)
-
 type state struct {
 	timeRemaining int64
 	valve         valveName
@@ -14,7 +10,7 @@ type state struct {
 type Volcano struct {
 	valves map[valveName]*valve
 	start  *valve
-	cache  map[state]*float64
+	cache  map[state]*int64
 }
 
 func NewVolcano() Volcano {
@@ -61,45 +57,43 @@ func (v *Volcano) ParseValve(name string, flowRate int64, neighbors []string) {
 }
 
 func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
-	v.cache = make(map[state]*float64, len(v.valves)*len(v.valves))
-
-	out := v.exploreDepthFirstSearchMaxPressure(timeLimit, v.start, 0)
-
-	return int64(out)
+	v.cache = make(map[state]*int64, len(v.valves)*len(v.valves))
+	return v.exploreDepthFirstSearchMaxPressure(timeLimit, v.start, 0)
 }
 
 func (v *Volcano) ReleaseTheMostPressureWithinWithHelp(timeLimit int64) int64 {
-	v.cache = make(map[state]*float64, len(v.valves)*len(v.valves))
-	var out float64 = 0
+	v.cache = make(map[state]*int64, len(v.valves)*len(v.valves))
+	var out int64 = 0
 	// TODO: Learn about bit arithmetic
 	var b uint32 = (1 << (len(v.valves) - 1)) - 1
 
 	for i := uint32(0); i < b+1; i++ {
-		out = math.Max(
-			out,
-			v.exploreDepthFirstSearchMaxPressure(
-				timeLimit,
-				v.start,
-				i,
-			)+v.exploreDepthFirstSearchMaxPressure(
-				timeLimit,
-				v.start,
-				b^i, // this is voodoo to me
-			),
+		solution := v.exploreDepthFirstSearchMaxPressure(
+			timeLimit,
+			v.start,
+			i,
+		) + v.exploreDepthFirstSearchMaxPressure(
+			timeLimit,
+			v.start,
+			b^i, // this is voodoo to me
 		)
+
+		if solution > out {
+			out = solution
+		}
 	}
 
-	return int64(out)
+	return out
 }
 
-func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source *valve, mask uint32) float64 {
+func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source *valve, mask uint32) int64 {
 	state := state{timeRemaining: timeRemaining, valve: source.name, mask: mask}
 
 	if v.cache[state] != nil {
 		return *v.cache[state]
 	}
 
-	var maxPressure float64 = 0
+	var maxPressure int64 = 0
 
 	for name, val := range v.valves {
 		if name == source.name {
@@ -119,17 +113,19 @@ func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source
 			continue
 		}
 
-		maxPressure = math.Max(
-			maxPressure,
-			v.exploreDepthFirstSearchMaxPressure(
-				remaining,
-				val,
-				mask|bit, // what kind of black magic is this
-			)+float64(val.flowRate*remaining),
-		)
+		solution := v.exploreDepthFirstSearchMaxPressure(
+			remaining,
+			val,
+			mask|bit, // what kind of black magic is this
+		) + (val.flowRate * remaining)
+
+		if solution > maxPressure {
+			maxPressure = solution
+		}
 	}
 
 	v.cache[state] = &maxPressure
+
 	return maxPressure
 }
 
