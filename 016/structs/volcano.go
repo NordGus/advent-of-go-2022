@@ -2,14 +2,12 @@ package structs
 
 import (
 	"fmt"
-	"sync"
 )
 
 // Volcano is a simple graph representation of problem's map layout
 type Volcano struct {
-	valves     map[valveName]*valve
-	start      *valve
-	valveIndex int
+	valves map[valveName]*valve
+	start  *valve
 }
 
 func NewVolcano() Volcano {
@@ -19,22 +17,20 @@ func NewVolcano() Volcano {
 	}
 }
 
-func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
+func (v *Volcano) ParseValve(name string, flowRate int64, neighbors []string) {
 	vName := valveName(name)
 	val := v.valves[vName]
 
 	if val == nil {
 		val = &valve{
-			name:      vName,
-			neighbors: make(map[valveName]*valve, defaultNeighborsMapSize),
+			name:    vName,
+			tunnels: make(map[valveName]tunnel, defaultNeighborsMapSize),
 		}
 
 		v.valves[vName] = val
 	}
 
 	val.flowRate = flowRate
-	val.index = v.valveIndex
-	v.valveIndex++
 
 	for i := 0; i < len(neighbors); i++ {
 		neighborValveName := valveName(neighbors[i])
@@ -42,152 +38,114 @@ func (v *Volcano) AddValve(name string, flowRate int64, neighbors []string) {
 
 		if neighbor == nil {
 			neighbor = &valve{
-				name:      neighborValveName,
-				neighbors: make(map[valveName]*valve, defaultNeighborsMapSize),
+				name:    neighborValveName,
+				tunnels: make(map[valveName]tunnel, defaultNeighborsMapSize),
 			}
 
 			v.valves[neighborValveName] = neighbor
 		}
 
-		val.neighbors[neighborValveName] = neighbor
+		val.tunnels[neighborValveName] = tunnel{to: neighbor, travelTime: 1}
 	}
 
-	if val.index == 0 {
+	if val.name == "AA" {
 		v.start = val
 	}
 }
 
 func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
-	var out *room
-	wg := new(sync.WaitGroup)
-	trip := make(trip, len(v.valves))
-
-	// fill all valves' shortest paths
-	wg.Add(1)
-	go v.fillValvesShortestPath(wg)
-	wg.Wait()
-
-	// build trip starting state
-	for _, from := range v.valves {
-		trip[from.index] = make([]*room, len(v.valves))
-
-		for _, to := range v.valves {
-			trip[from.index][to.index] = &room{
-				valve:         *to,
-				timeRemaining: timeLimit,
-				openedValves:  make(map[valveName]bool, len(v.valves)),
-			}
-		}
-	}
-
-	// build solution
-	for i := 0; i < len(v.valves); i++ {
-		for j := 0; j < len(v.valves); j++ {
-			var top *room
-			var diagonal *room
-
-			left := trip[i][0]
-
-			if i == 0 && j == 0 {
-				top = trip[i][j]
-				diagonal = trip[i][j]
-			}
-
-			if i == 0 && j > 0 {
-				top = trip[i][0]
-				diagonal = trip[i][0]
-			}
-
-			if i > 0 && j == 0 {
-				left = trip[j][i]
-				diagonal = trip[i-1][j]
-			}
-
-			if top == nil {
-				top = trip[i-1][j]
-			}
-
-			if diagonal == nil {
-				diagonal = trip[i-1][j-1]
-			}
-
-			fromLeft := trip[i][j].travel(*left, v)
-			fromTop := trip[i][j].travel(*top, v)
-			fromDiagonal := trip[i][j].travel(*diagonal, v)
-
-			if (fromLeft.pressureReleased * fromLeft.timeRemaining) > (trip[i][j].pressureReleased * trip[i][j].timeRemaining) {
-				trip[i][j] = &fromLeft
-			}
-
-			if (fromTop.pressureReleased * fromTop.timeRemaining) > (trip[i][j].pressureReleased * trip[i][j].timeRemaining) {
-				trip[i][j] = &fromTop
-			}
-
-			if (fromDiagonal.pressureReleased * fromDiagonal.timeRemaining) > (trip[i][j].pressureReleased * trip[i][j].timeRemaining) {
-				trip[i][j] = &fromDiagonal
-			}
-
-			if i == 1 {
-				fmt.Printf("current[%v][%v] %v\n", i, j, trip[i][j].valve.name)
-				fmt.Printf("\t%v\n", trip[i][j].path)
-				fmt.Printf("\tpressureReleased %v\n", trip[i][j].pressureReleased)
-				fmt.Printf("\ttimeRemaining %v\n", trip[i][j].timeRemaining)
-				fmt.Printf("\topenedValves %v\n", trip[i][j].openedValves)
-			}
-
-			if out == nil || trip[i][j].pressureReleased > out.pressureReleased {
-				out = trip[i][j]
-			}
-		}
-	}
-
-	fmt.Println(out.pressureReleased)
+	fmt.Println(len(v.valves), timeLimit)
 
 	return 0
 }
 
-func (v *Volcano) fillValvesShortestPath(wg *sync.WaitGroup) {
-	for _, val := range v.valves {
-		wg.Add(1)
-		go func(v *Volcano, val *valve, wg *sync.WaitGroup) {
-			val.shortestPath = v.exploreFrom(val)
-			wg.Done()
-		}(v, val, wg)
-	}
-
-	wg.Done()
-}
-
-func (v *Volcano) exploreFrom(start *valve) path {
+func (v *Volcano) exploreBreathFirstFrom(start valveName) path {
 	visited := make(map[valveName]bool, len(v.valves))
 	moveQueue := make([]step, 0, len(v.valves))
 	path := make(path, len(v.valves))
 
-	visited[start.name] = true
-	path[start.name] = step{from: "-", to: start.name}
-	moveQueue = append(moveQueue, path[start.name])
+	visited[start] = true
+	path[start] = step{from: "-", to: start}
+	moveQueue = append(moveQueue, path[start])
 
 	for len(moveQueue) > 0 {
 		current := moveQueue[0]
 		moveQueue = moveQueue[1:]
 
-		for _, neighbor := range v.valves[current.to].neighbors {
-			if visited[neighbor.name] {
+		for _, neighbor := range v.valves[current.to].tunnels {
+			if visited[neighbor.to.name] {
 				continue
 			}
 
-			visited[neighbor.name] = true
+			visited[neighbor.to.name] = true
 
 			move := step{
 				from:      current.to,
-				to:        neighbor.name,
+				to:        neighbor.to.name,
 				visitedAt: current.visitedAt + 1,
 			}
 
 			moveQueue = append(moveQueue, move)
-			path[neighbor.name] = move
+			path[neighbor.to.name] = move
 		}
 	}
 
 	return path
+}
+
+func (v *Volcano) Simplify() Volcano {
+	volcano := &Volcano{
+		valves: make(map[valveName]*valve, len(v.valves)),
+	}
+
+	for name, val := range v.valves {
+		if val.flowRate > 0 || name == "AA" {
+			volcano.valves[name] = &valve{
+				name:     name,
+				flowRate: val.flowRate,
+				tunnels:  make(map[valveName]tunnel, len(v.valves)),
+			}
+		}
+
+		if name == "AA" {
+			volcano.start = volcano.valves[name]
+		}
+	}
+
+	for name, val := range volcano.valves {
+		paths := v.exploreBreathFirstFrom(name)
+
+		for neighborName, neighbor := range volcano.valves {
+			if name == neighborName {
+				continue
+			}
+
+			steps := paths.pathTo(neighborName)
+
+			for i := 0; i < len(steps); i++ {
+				current := steps[i].to
+
+				if volcano.valves[current] != nil && current != neighborName {
+					val.tunnels[current] = tunnel{
+						to:         volcano.valves[current],
+						travelTime: int64(i + 1),
+					}
+					break
+				}
+
+				if current == neighborName {
+					val.tunnels[neighborName] = tunnel{
+						to:         neighbor,
+						travelTime: int64(i + 1),
+					}
+				}
+			}
+		}
+	}
+
+	for name, val := range volcano.valves {
+		val.shortestPath = volcano.exploreBreathFirstFrom(name)
+	}
+
+	return *volcano
 }

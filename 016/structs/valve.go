@@ -11,7 +11,11 @@ type valveName string
 type valve struct {
 	name         valveName
 	flowRate     int64
-	neighbors    map[valveName]*valve
+	tunnels      map[valveName]tunnel
 	shortestPath path
-	index        int
+}
+
+type tunnel struct {
+	to         *valve
+	travelTime int64
 }

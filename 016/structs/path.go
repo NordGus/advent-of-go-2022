@@ -21,7 +21,7 @@ func (a sortByTime) Less(i, j int) bool { return a[i].visitedAt < a[j].visitedAt
 
 type path map[valveName]step
 
-func (p path) pathTo(destination valveName, elapsed int64) []step {
+func (p path) pathTo(destination valveName) []step {
 	out := make([]step, 0, len(p))
 
 	current := p[destination]
@@ -30,7 +30,7 @@ func (p path) pathTo(destination valveName, elapsed int64) []step {
 		s := step{
 			from:      current.from,
 			to:        current.to,
-			visitedAt: current.visitedAt + elapsed,
+			visitedAt: current.visitedAt,
 		}
 
 		out = append(out, s)

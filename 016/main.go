@@ -27,6 +27,7 @@ const (
 )
 
 func main() {
+	start := time.Now()
 	file, err := os.Open(inputFileName)
 	if err != nil {
 		log.Fatal(err)
@@ -40,13 +41,15 @@ func main() {
 	data := parseInput(input)
 
 	for in := range data {
-		volcano.AddValve(in.name, in.rate, in.neighbors)
+		volcano.ParseValve(in.name, in.rate, in.neighbors)
 	}
 
-	start := time.Now()
+	volcano = volcano.Simplify()
+	start1 := time.Now()
 	part1 := volcano.ReleaseTheMostPressureWithin(volcanoTimer)
+	fmt.Printf("Part 1: What is the most pressure you can release? %v (took %v)\n", part1, time.Since(start1))
 
-	fmt.Printf("Part 1: What is the most pressure you can release? %v (took %v)\n", part1, time.Since(start))
+	fmt.Printf("took in total: %v\n", time.Since(start))
 }
 
 func scanInput(input *os.File) <-chan string {
