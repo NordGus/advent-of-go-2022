@@ -23,7 +23,8 @@ type parsedData struct {
 }
 
 const (
-	volcanoTimer int64 = 30
+	volcanoTimer         int64 = 30
+	volcanoTimerWithHelp int64 = 26
 )
 
 func main() {
@@ -45,10 +46,15 @@ func main() {
 	}
 
 	volcano1 := volcano.Simplify()
+	volcano2 := volcano.Simplify()
 
 	start1 := time.Now()
 	part1 := volcano1.ReleaseTheMostPressureWithin(volcanoTimer)
 	fmt.Printf("Part 1: What is the most pressure you can release? %v (took %v)\n", part1, time.Since(start1))
+
+	start2 := time.Now()
+	part2 := volcano2.ReleaseTheMostPressureWithinWithHelp(volcanoTimerWithHelp)
+	fmt.Printf("Part 2: With you and an elephant working together for 26 minutes, what is the most pressure you could release? %v (took %v)\n", part2, time.Since(start2))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }

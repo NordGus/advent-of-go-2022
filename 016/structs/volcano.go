@@ -12,10 +12,9 @@ type state struct {
 
 // Volcano is a simple graph representation of problem's map layout
 type Volcano struct {
-	valves   map[valveName]*valve
-	start    *valve
-	cache    map[state]*float64
-	openable []*valve
+	valves map[valveName]*valve
+	start  *valve
+	cache  map[state]*float64
 }
 
 func NewVolcano() Volcano {
@@ -69,6 +68,30 @@ func (v *Volcano) ReleaseTheMostPressureWithin(timeLimit int64) int64 {
 	return int64(out)
 }
 
+func (v *Volcano) ReleaseTheMostPressureWithinWithHelp(timeLimit int64) int64 {
+	v.cache = make(map[state]*float64, len(v.valves)*len(v.valves))
+	var out float64 = 0
+	// TODO: Learn about bit arithmetic
+	var b uint32 = (1 << (len(v.valves) - 1)) - 1
+
+	for i := uint32(0); i < b+1; i++ {
+		out = math.Max(
+			out,
+			v.exploreDepthFirstSearchMaxPressure(
+				timeLimit,
+				v.start,
+				i,
+			)+v.exploreDepthFirstSearchMaxPressure(
+				timeLimit,
+				v.start,
+				b^i, // this is voodoo to me
+			),
+		)
+	}
+
+	return int64(out)
+}
+
 func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source *valve, mask uint32) float64 {
 	state := state{timeRemaining: timeRemaining, valve: source.name, mask: mask}
 
@@ -85,6 +108,7 @@ func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source
 
 		bit := uint32(1) << val.index
 
+		// bit manipulation black magic
 		if mask&bit != 0 {
 			continue
 		}
@@ -95,7 +119,14 @@ func (v *Volcano) exploreDepthFirstSearchMaxPressure(timeRemaining int64, source
 			continue
 		}
 
-		maxPressure = math.Max(maxPressure, v.exploreDepthFirstSearchMaxPressure(remaining, val, mask|bit)+float64(val.flowRate*remaining))
+		maxPressure = math.Max(
+			maxPressure,
+			v.exploreDepthFirstSearchMaxPressure(
+				remaining,
+				val,
+				mask|bit, // what kind of black magic is this
+			)+float64(val.flowRate*remaining),
+		)
 	}
 
 	v.cache[state] = &maxPressure
@@ -139,8 +170,7 @@ func (v *Volcano) exploreBreathFirstSearch(start valveName) path {
 
 func (v *Volcano) Simplify() *Volcano {
 	volcano := &Volcano{
-		valves:   make(map[valveName]*valve, len(v.valves)),
-		openable: make([]*valve, 0, len(v.valves)-1),
+		valves: make(map[valveName]*valve, len(v.valves)),
 	}
 
 	for name, val := range v.valves {
@@ -192,7 +222,6 @@ func (v *Volcano) Simplify() *Volcano {
 
 		if name != "AA" {
 			val.index = index
-			volcano.openable = append(volcano.openable, val)
 			index++
 		}
 	}
