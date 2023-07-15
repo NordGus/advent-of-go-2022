@@ -14,6 +14,9 @@ import (
 
 const (
 	inputFileName = "016/input.txt"
+
+	volcanoTimer         int64 = 30
+	volcanoTimerWithHelp int64 = 26
 )
 
 type parsedData struct {
@@ -21,11 +24,6 @@ type parsedData struct {
 	rate      int64
 	neighbors []string
 }
-
-const (
-	volcanoTimer         int64 = 30
-	volcanoTimerWithHelp int64 = 26
-)
 
 func main() {
 	start := time.Now()
