@@ -3,3 +3,5 @@
 > I have no idea what I'm doing. - NordGus 2023
 
 This repository contains my implementations of [Advent Of Code's 2022](https://adventofcode.com/2022) puzzles using Go.
+
+> I called quits after Day 17 part 1
