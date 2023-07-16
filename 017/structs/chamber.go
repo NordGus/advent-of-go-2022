@@ -62,7 +62,7 @@ func (c *Chamber) HowManyUnitsTallWillTheTowerOfRocksBeAfterNRocksHaveStoppedFal
 			falling.moveLeft()
 		}
 
-		if move == moveRight && falling.right < chamberWidth-1 && falling.canMoveRight(c.rocks) {
+		if move == moveRight && falling.right < c.width-1 && falling.canMoveRight(c.rocks) {
 			falling.moveRight()
 		}
 
@@ -90,7 +90,7 @@ func (c *Chamber) Print() {
 
 	for i := c.highestPoint; i >= 0; i-- {
 		builder.WriteRune('|')
-		for j := int64(0); j < chamberWidth; j++ {
+		for j := int64(0); j < c.width; j++ {
 			if c.rocks[location{x: j, y: i}] {
 				builder.WriteRune('#')
 				continue
@@ -116,7 +116,7 @@ func (c *Chamber) PrintFalling(falling *rock) {
 
 	for i := start; i >= 0; i-- {
 		builder.WriteRune('|')
-		for j := int64(0); j < chamberWidth; j++ {
+		for j := int64(0); j < c.width; j++ {
 			if c.rocks[location{x: j, y: i}] || falling.contains(j, i) {
 				if falling.contains(j, i) {
 					builder.WriteRune('@')
