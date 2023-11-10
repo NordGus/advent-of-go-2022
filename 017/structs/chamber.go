@@ -11,7 +11,10 @@ const (
 	chamberSpanPointYOffset  = 3
 	chamberRockStartCapacity = 5_000
 
-	rockPatterCount = 5
+	rockPatterCount int64 = 5
+
+	moveLeft  = '<'
+	moveRight = '>'
 )
 
 type location struct {
@@ -21,7 +24,7 @@ type location struct {
 type Chamber struct {
 	jets         jet
 	rocks        map[location]bool
-	rockCount    uint
+	rockCount    int64
 	highestPoint int64
 	spanPoint    int64
 	width        int64
@@ -42,14 +45,12 @@ func (c *Chamber) SetJets(jets string) {
 	c.jets.setPattern([]rune(jets))
 }
 
-func (c *Chamber) HowManyUnitsTallWillTheTowerOfRocksBeAfterNRocksHaveStoppedFalling(limit uint) int64 {
+func (c *Chamber) HowManyUnitsTallWillTheTowerOfRocksBeAfterNRocksHaveStoppedFalling(limit int64) int64 {
 	var (
-		falling   *rock
-		moveLeft  = '<'
-		moveRight = '>'
+		falling *rock
 	)
 
-	for i := uint64(0); c.rockCount < limit; i++ {
+	for i := int64(0); c.rockCount < limit; i++ {
 		if falling == nil {
 			falling = &rock{}
 			spanAt := location{x: c.spanPoint, y: c.highestPoint + chamberSpanPointYOffset}
@@ -84,6 +85,15 @@ func (c *Chamber) HowManyUnitsTallWillTheTowerOfRocksBeAfterNRocksHaveStoppedFal
 
 	return c.highestPoint
 }
+
+func (c *Chamber) HowManyUnitsTallWillTheTowerOfRocksBeAfterNRocksHaveStoppedFallingSim(limit int64) int64 {
+
+	return 0
+}
+
+// func (c *Chamber) simulate(tick uint64, rockCount uint64, ) {
+
+// }
 
 func (c *Chamber) Print() {
 	builder := strings.Builder{}

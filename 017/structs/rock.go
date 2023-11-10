@@ -10,7 +10,7 @@ type rock struct {
 	bottom int64
 }
 
-func (r *rock) spanAt(index uint, span location) {
+func (r *rock) spanAt(index int64, span location) {
 	r.setPattern(index)
 	r.left = span.x
 	r.right = int64(len(r.rocks[0])) + span.x - 1
@@ -153,7 +153,7 @@ func (r *rock) contains(x int64, y int64) bool {
 	return false
 }
 
-func (r *rock) setPattern(index uint) {
+func (r *rock) setPattern(index int64) {
 	switch index {
 	case 0:
 		// ####
