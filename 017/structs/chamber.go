@@ -42,26 +42,30 @@ type stateData struct {
 }
 
 type Chamber struct {
-	jets         jet
-	collisions   map[location]bool
-	states       map[state]stateData
-	lastState    state
-	rocks        []rock
-	rockCount    int64
-	highestPoint int64
-	spanPoint    int64
-	width        int64
+	jets           jet
+	collisions     map[location]bool
+	states         map[state]stateData
+	previousStates []state
+	rocks          []rock
+	rockCount      int64
+	highestPoint   int64
+	spanPoint      int64
+	width          int64
 }
 
 func NewChamber() *Chamber {
+	prevStates := make([]state, 0, rockCacheCapacity)
+	prevStates = append(prevStates, state{})
+
 	return &Chamber{
-		collisions:   make(map[location]bool, chamberRockStartCapacity),
-		rocks:        make([]rock, 0, rockCacheCapacity),
-		states:       make(map[state]stateData, rockCacheCapacity),
-		rockCount:    0,
-		highestPoint: 0,
-		spanPoint:    chamberSpanPointX,
-		width:        chamberWidth,
+		collisions:     make(map[location]bool, chamberRockStartCapacity),
+		rocks:          make([]rock, 0, rockCacheCapacity),
+		states:         make(map[state]stateData, rockCacheCapacity),
+		previousStates: prevStates,
+		rockCount:      0,
+		highestPoint:   0,
+		spanPoint:      chamberSpanPointX,
+		width:          chamberWidth,
 	}
 }
 
@@ -75,67 +79,78 @@ func (c *Chamber) HowManyUnitsTallWillTheTowerOfRocksBeAfterNRocksHaveStoppedFal
 
 	for i := uint64(0); c.rockCount < limit; i++ {
 		if falling == nil && c.rockCount >= simSaveStateThreshold {
-			if found, cached, current := c.findPatternOrSaveSimState(i); found {
-				lastCachedRock := c.rocks[cached.rockCount-1]
-				lastCurrentRock := c.rocks[current.rockCount-1]
+			if found, cached, current := c.findPatternOrSaveSimState(i - 1); found {
+				var (
+					pending = limit - current.rockCount
 
-				cachedRocks := c.rocks[cached.rockCount-simSaveStateThreshold : cached.rockCount]
-				currentRocks := c.rocks[current.rockCount-simSaveStateThreshold : current.rockCount]
+					patternCount  = current.rockCount - cached.rockCount
+					patternHeight = current.highestPoint - cached.highestPoint
+					patternRocks  = c.rocks[cached.rockCount-simSaveStateThreshold : current.rockCount]
 
-				fmt.Printf("cached \n %+v \n %+v \n", lastCachedRock, cachedRocks[len(cachedRocks)-1])
-				fmt.Printf("current \n %+v \n %+v \n", lastCurrentRock, currentRocks[len(currentRocks)-1])
+					pendingReps = (pending / patternCount)
+				)
 
-				cachedCollisions := make(map[location]bool, chamberRockStartCapacity)
-				currentCollisions := make(map[location]bool, chamberRockStartCapacity)
+				newC := NewChamber()
+				newC.highestPoint = c.highestPoint + (pendingReps * patternHeight)
+				newC.rockCount = c.rockCount + (pendingReps * patternCount)
+				newC.jets = c.jets
+				h := newC.highestPoint - 1
 
-				for i := int64(0); i < simSaveStateThreshold; i++ {
-					cachedCollisions = cachedRocks[i].stop(cachedCollisions)
-					currentCollisions = currentRocks[i].stop(currentCollisions)
+				for i := len(patternRocks) - 1; i >= 0; i-- {
+					patternRocks[i].changeHeight(h)
+
+					newC.rocks = append(newC.rocks, patternRocks[i])
+					newC.collisions = patternRocks[i].stop(newC.collisions)
+
+					j := len(patternRocks) - 1 - i
+
+					h -= c.previousStates[len(c.previousStates)-1-j].heighDiff
 				}
 
-				builder := strings.Builder{}
-				count := 0
-
-				for i := lastCachedRock.top; i >= cachedRocks[0].bottom; i-- {
-					for j := int64(0); j < c.width; j++ {
-						if cachedCollisions[location{x: j, y: i, isRock: true}] {
-							builder.WriteRune('#')
-							continue
-						}
-						builder.WriteRune('.')
-					}
-
-					fmt.Println(builder.String())
-					builder.Reset()
-					count++
-				}
-
-				fmt.Println("lines:", count)
-				count = 0
-
-				for i := lastCurrentRock.top; i >= currentRocks[0].bottom; i-- {
-					for j := int64(0); j < c.width; j++ {
-						if currentCollisions[location{x: j, y: i, isRock: true}] {
-							builder.WriteRune('#')
-							continue
-						}
-						builder.WriteRune('.')
-					}
-
-					fmt.Println(builder.String())
-					builder.Reset()
-					count++
-				}
-
-				fmt.Println("lines:", count)
-
-				fmt.Println(lastCachedRock.top - cachedRocks[0].bottom + 1)
-				fmt.Println(lastCurrentRock.top - currentRocks[0].bottom + 1)
-
-				return c.highestPoint
+				return newC.continueSimulationFrom(c.jets.getDirectionIndex(i), limit)
 			}
 		}
 
+		if falling == nil {
+			falling = &rock{}
+			spanAt := location{x: c.spanPoint, y: c.highestPoint + chamberSpanPointYOffset}
+			falling.spanAt(c.rockCount%rockPatterCount, spanAt)
+		}
+
+		move := c.jets.getNextDirection(i)
+
+		if move == moveLeft && falling.left > 0 && falling.canMoveLeft(c.collisions) {
+			falling.moveLeft()
+		}
+
+		if move == moveRight && falling.right < c.width-1 && falling.canMoveRight(c.collisions) {
+			falling.moveRight()
+		}
+
+		if falling.bottom > 0 && falling.canFall(c.collisions) {
+			falling.fall()
+			continue
+		}
+
+		if falling.top >= c.highestPoint {
+			c.highestPoint = falling.top + 1
+		}
+
+		c.collisions = falling.stop(c.collisions)
+		c.rocks = append(c.rocks, *falling)
+
+		c.rockCount++
+
+		falling = nil
+	}
+
+	return c.highestPoint
+}
+
+func (c *Chamber) continueSimulationFrom(jetDirectionIndex uint64, limit int64) int64 {
+	var falling *rock
+
+	for i := jetDirectionIndex; c.rockCount < limit; i++ {
 		if falling == nil {
 			falling = &rock{}
 			spanAt := location{x: c.spanPoint, y: c.highestPoint + chamberSpanPointYOffset}
@@ -178,7 +193,7 @@ func (c *Chamber) findPatternOrSaveSimState(tick uint64) (bool, stateData, state
 		data stateData
 
 		rocks = c.rocks[c.rockCount-simSaveStateThreshold:]
-		ls    = c.lastState
+		ls    = c.previousStates[len(c.previousStates)-1]
 		cs    = make(map[location]bool, chamberRockStartCapacity)
 	)
 
@@ -190,7 +205,7 @@ func (c *Chamber) findPatternOrSaveSimState(tick uint64) (bool, stateData, state
 
 	s.jetDirectionIndex = c.jets.getDirectionIndex(tick)
 	s.rockPatternIndex = c.rockCount % rockPatterCount
-	s.innerHeight = rocks[len(rocks)-1].top - rocks[0].bottom + 1
+	s.innerHeight = rocks[len(rocks)-1].top - rocks[0].bottom
 
 	data.highestPoint = c.highestPoint
 	data.rockCount = c.rockCount
@@ -217,7 +232,7 @@ func (c *Chamber) findPatternOrSaveSimState(tick uint64) (bool, stateData, state
 			}
 
 			mask := uint64(1)
-			mask = mask << (size % 64)
+			mask = mask << (63 - (size % 64))
 
 			if size <= 64 {
 				s.positionMask1 = s.positionMask1 | mask
@@ -233,14 +248,10 @@ func (c *Chamber) findPatternOrSaveSimState(tick uint64) (bool, stateData, state
 		}
 	}
 
-	c.lastState = s
+	c.previousStates = append(c.previousStates, s)
 
 	oldData, ok := c.states[s]
 	if ok {
-		fmt.Printf("%+v: %+v \n", s, data)
-		fmt.Printf("%+v: %+v \n", s, oldData)
-		fmt.Printf("%+v: %+v \n", ls, c.states[ls])
-
 		return true, oldData, data
 	}
 

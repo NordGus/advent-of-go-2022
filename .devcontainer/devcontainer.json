@@ -2,35 +2,31 @@
     "name": "Advent of Go",
     "build": {
         "args": {
-            "GO_VERSION": "1.20",
-            "ALPINE_VERSION": "3.17"
-        }
-    },
-    "dockerFile": "devcontainer.Dockerfile",
+          "GO_VERSION": "1.21",
+          "ALPINE_VERSION": "3.18",
+          "NODE_VERSION": "20.8"
+        },
+        "dockerfile": "devcontainer.Dockerfile"
+      },
     "customizations": {
-        "vscode": {
-            "extensions": [
-				"golang.Go",
-				"davidanson.vscode-markdownlint",
-				"shardulm94.trailing-spaces",
-				"IBM.output-colorizer",
-				"rangav.vscode-thunder-client",
-				"donjayamanne.githistory",
-				"streetsidesoftware.code-spell-checker",
-				"alexcvzz.vscode-sqlite"
-			],
-            "settings": {
-                "go.useLanguageServer": true
-            }
+    "vscode": {
+        "extensions": [
+        "golang.Go",
+        "davidanson.vscode-markdownlint",
+        "shardulm94.trailing-spaces",
+        "IBM.output-colorizer",
+        "rangav.vscode-thunder-client",
+        "donjayamanne.githistory",
+        "streetsidesoftware.code-spell-checker",
+        "alexcvzz.vscode-sqlite"
+        ],
+        "settings": {
+        "go.useLanguageServer": true
         }
+    }
     },
-    "runArgs": [
-        "-u",
-        "vscode",
-        "--cap-add=SYS_PTRACE",
-        "--security-opt",
-        "seccomp=unconfined",
-        // map SSH keys for Git
-        "-v", "${env:HOME}/.ssh:/home/vscode/.ssh:ro"
-    ]
+    "capAdd": ["SYS_PTRACE"],
+    "securityOpt": ["seccomp=unconfined"],
+    "containerUser": "vscode",
+    "mounts": [{ "source": "${env:HOME}/.ssh", "target": "/home/vscode/.ssh:ro", "type": "bind" }]
 }

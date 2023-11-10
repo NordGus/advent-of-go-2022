@@ -26,6 +26,18 @@ func (r *rock) spanAt(index int64, span location) {
 	}
 }
 
+func (r *rock) changeHeight(h int64) {
+	oldTop := r.top
+	r.top = h
+	r.bottom = r.top - (oldTop - r.bottom)
+
+	for i := 0; i < len(r.rocks); i++ {
+		for j := 0; j < len(r.rocks[i]); j++ {
+			r.rocks[i][j].y = h - (oldTop - r.rocks[i][j].y)
+		}
+	}
+}
+
 func (r *rock) canMoveLeft(obstacles map[location]bool) bool {
 	for i := 0; i < len(r.rocks); i++ {
 		for j := 0; j < len(r.rocks[i]); j++ {
