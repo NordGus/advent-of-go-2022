@@ -13,6 +13,6 @@ type point struct {
 	material materialType
 }
 
-func newPoint(x, y, z int) point {
-	return point{x: x, y: y, z: z}
+func newPoint(x, y, z int, material materialType) point {
+	return point{x: x, y: y, z: z, material: material}
 }

@@ -4,10 +4,10 @@ import "testing"
 
 func TestCloud_CountSidesThatAreNotConnectedBetweenCubes(t *testing.T) {
 	type fields struct {
-		points []point
-		maxX   int
-		maxY   int
-		maxZ   int
+		lava []point
+		maxX int
+		maxY int
+		maxZ int
 	}
 	tests := []struct {
 		name   string
@@ -17,7 +17,7 @@ func TestCloud_CountSidesThatAreNotConnectedBetweenCubes(t *testing.T) {
 		{
 			name: "Part 2: What is the surface area of your scanned lava droplet?",
 			fields: fields{
-				points: []point{
+				lava: []point{
 					{2, 2, 2, lava},
 					{1, 2, 2, lava},
 					{3, 2, 2, lava},
@@ -42,10 +42,10 @@ func TestCloud_CountSidesThatAreNotConnectedBetweenCubes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Cloud{
-				points: tt.fields.points,
-				maxX:   tt.fields.maxX,
-				maxY:   tt.fields.maxY,
-				maxZ:   tt.fields.maxZ,
+				lava: tt.fields.lava,
+				maxX: tt.fields.maxX,
+				maxY: tt.fields.maxY,
+				maxZ: tt.fields.maxZ,
 			}
 			if got := c.CountExternalSurfaceAreaOfLavaDroplet(); got != tt.want {
 				t.Errorf("CountExternalSurfaceAreaOfLavaDroplet() = %v, want %v", got, tt.want)
