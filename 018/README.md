@@ -32,4 +32,4 @@ In the above example, after counting up all the sides that aren't connected to a
 
 **What is the surface area of your scanned lava droplet?**
 
-Your puzzle answer was `?`.
+Your puzzle answer was `4548`.
