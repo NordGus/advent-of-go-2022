@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/NordGus/advent-of-go-2022/018/part2"
 	"log"
 	"os"
 	"strconv"
@@ -25,17 +26,23 @@ func main() {
 
 	defer file.Close()
 	c1 := part1.NewCloud()
+	c2 := part2.NewCloud()
 
 	input := scanInput(file)
 	points := parsePoints(input)
 
 	for in := range points {
 		c1.AddPoint(in)
+		c2.AddLavaPoint(in)
 	}
 
 	start1 := time.Now()
-	p1 := c1.CountSidesThatAreNotConnectedBetweenCubes()
+	p1 := c1.CountSurfaceAreaOfLavaDroplet()
 	fmt.Printf("Part 1: What is the surface area of your scanned lava droplet? %v (took %v)\n", p1, time.Since(start1))
+
+	start2 := time.Now()
+	p2 := c2.CountExternalSurfaceAreaOfLavaDroplet()
+	fmt.Printf("Part 1: What is the surface area of your scanned lava droplet? %v (took %v)\n", p2, time.Since(start2))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
