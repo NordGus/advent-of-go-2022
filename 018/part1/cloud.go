@@ -21,16 +21,16 @@ func NewCloud() *Cloud {
 func (c *Cloud) AddPoint(data [3]int) {
 	p := newPoint(data[0], data[1], data[2])
 
-	if p.x > c.maxX {
-		c.maxX = p.x
+	if p.x >= c.maxX {
+		c.maxX = p.x + 1
 	}
 
-	if p.y > c.maxY {
-		c.maxY = p.y
+	if p.y >= c.maxY {
+		c.maxY = p.y + 1
 	}
 
-	if p.z > c.maxZ {
-		c.maxZ = p.z
+	if p.z >= c.maxZ {
+		c.maxZ = p.z + 1
 	}
 
 	c.points = append(c.points, p)
@@ -45,14 +45,14 @@ func (c *Cloud) CountSidesThatAreNotConnectedBetweenCubes() int {
 	for _, pnt := range c.points {
 		neighbors := make([]point, 0, shapeSidesCount)
 
-		negXNeighbor := getNeighbor(space, pnt.planeX()-1, pnt.planeY(), pnt.planeZ())
-		posXNeighbor := getNeighbor(space, pnt.planeX()+1, pnt.planeY(), pnt.planeZ())
+		negXNeighbor := getNeighbor(space, pnt.x-1, pnt.y, pnt.z)
+		posXNeighbor := getNeighbor(space, pnt.x+1, pnt.y, pnt.z)
 
-		negYNeighbor := getNeighbor(space, pnt.planeX(), pnt.planeY()-1, pnt.planeZ())
-		posYNeighbor := getNeighbor(space, pnt.planeX(), pnt.planeY()+1, pnt.planeZ())
+		negYNeighbor := getNeighbor(space, pnt.x, pnt.y-1, pnt.z)
+		posYNeighbor := getNeighbor(space, pnt.x, pnt.y+1, pnt.z)
 
-		negZNeighbor := getNeighbor(space, pnt.planeX(), pnt.planeY(), pnt.planeZ()-1)
-		posZNeighbor := getNeighbor(space, pnt.planeX(), pnt.planeY(), pnt.planeZ()+1)
+		negZNeighbor := getNeighbor(space, pnt.x, pnt.y, pnt.z-1)
+		posZNeighbor := getNeighbor(space, pnt.x, pnt.y, pnt.z+1)
 
 		if negXNeighbor.active {
 			neighbors = append(neighbors, negXNeighbor)
@@ -96,7 +96,7 @@ func (c *Cloud) buildSpace() [][][]point {
 	}
 
 	for _, p := range c.points {
-		space[p.planeX()][p.planeY()][p.planeZ()] = p
+		space[p.x][p.y][p.z] = p
 	}
 
 	return space
