@@ -94,11 +94,15 @@ func (c *Cloud) buildSpace() [][][]point {
 
 		for j := 0; j < c.maxY; j++ {
 			space[i][j] = make([]point, c.maxZ)
+
+			for k := 0; k < c.maxZ; k++ {
+				space[i][j][k] = newPoint(i, j, k)
+			}
 		}
 	}
 
 	for _, p := range c.points {
-		space[p.x][p.y][p.z] = p
+		space[p.x][p.y][p.z].material = p.material
 	}
 
 	return space
@@ -106,11 +110,11 @@ func (c *Cloud) buildSpace() [][][]point {
 
 func getNeighbor(space [][][]point, x int, y int, z int) point {
 	if x < 0 || y < 0 || z < 0 {
-		return point{}
+		return newPoint(x, y, z)
 	}
 
 	if x >= len(space) || y >= len(space[0]) || z >= len(space[0][0]) {
-		return point{}
+		return newPoint(x, y, z)
 	}
 
 	return space[x][y][z]
