@@ -24,16 +24,18 @@ func main() {
 	}
 
 	defer file.Close()
-	p1 := part1.NewCloud()
+	c1 := part1.NewCloud()
 
 	input := scanInput(file)
 	points := parsePoints(input)
 
 	for in := range points {
-		p1.AddPoint(in)
+		c1.AddPoint(in)
 	}
 
-	fmt.Printf("%+v\n", p1)
+	start1 := time.Now()
+	p1 := c1.CountSidesThatAreNotConnectedBetweenCubes()
+	fmt.Printf("Part 1: What is the surface area of your scanned lava droplet? %v (took %v)\n", p1, time.Since(start1))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
