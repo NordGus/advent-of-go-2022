@@ -47,42 +47,11 @@ func (c *Cloud) CountExternalSurfaceAreaOfLavaDroplet() int {
 	c.buildCloud()
 
 	for _, lv := range c.lava {
-		neighbors := make([]point, 0, shapeSidesCount)
-
-		negXNeighbor := c.getNeighbor(lv.x-1, lv.y, lv.z)
-		posXNeighbor := c.getNeighbor(lv.x+1, lv.y, lv.z)
-
-		negYNeighbor := c.getNeighbor(lv.x, lv.y-1, lv.z)
-		posYNeighbor := c.getNeighbor(lv.x, lv.y+1, lv.z)
-
-		negZNeighbor := c.getNeighbor(lv.x, lv.y, lv.z-1)
-		posZNeighbor := c.getNeighbor(lv.x, lv.y, lv.z+1)
-
-		if negXNeighbor.material == lava || negXNeighbor.material == steam {
-			neighbors = append(neighbors, negXNeighbor)
+		for _, neighbor := range c.cloud[lv.x][lv.y][lv.z].neighbors {
+			if neighbor.material == lava || neighbor.material == steam {
+				sides -= 1
+			}
 		}
-
-		if posXNeighbor.material == lava || posXNeighbor.material == steam {
-			neighbors = append(neighbors, posXNeighbor)
-		}
-
-		if negYNeighbor.material == lava || negYNeighbor.material == steam {
-			neighbors = append(neighbors, negYNeighbor)
-		}
-
-		if posYNeighbor.material == lava || posYNeighbor.material == steam {
-			neighbors = append(neighbors, posYNeighbor)
-		}
-
-		if negZNeighbor.material == lava || negZNeighbor.material == steam {
-			neighbors = append(neighbors, negZNeighbor)
-		}
-
-		if posZNeighbor.material == lava || posZNeighbor.material == steam {
-			neighbors = append(neighbors, posZNeighbor)
-		}
-
-		sides -= len(neighbors)
 	}
 
 	return sides
@@ -102,23 +71,55 @@ func (c *Cloud) buildCloud() {
 			cloud[i][j] = make([]point, c.maxZ)
 
 			for k := 0; k < c.maxZ; k++ {
-				cloud[i][j][k] = newPoint(i, j, k, air)
+				cloud[i][j][k] = newPoint(i, j, k, steam)
 			}
 		}
 	}
 
-	for _, p := range c.lava {
-		cloud[p.x][p.y][p.z].material = p.material
+	for _, lv := range c.lava {
+		cloud[lv.x][lv.y][lv.z].material = lv.material
 	}
 
 	c.cloud = cloud
+
+	for i := 0; i < c.maxX; i++ {
+		for j := 0; j < c.maxY; j++ {
+			for k := 0; k < c.maxZ; k++ {
+				c.cloud[i][j][k].neighbors = append(
+					c.cloud[i][j][k].neighbors,
+					c.getNeighbor(i-1, j, k),
+					c.getNeighbor(i+1, j, k),
+					c.getNeighbor(i, j-1, k),
+					c.getNeighbor(i, j+1, k),
+					c.getNeighbor(i, j, k-1),
+					c.getNeighbor(i, j, k+1),
+				)
+			}
+		}
+	}
+
+	for i := 0; i < c.maxX; i++ {
+		for j := 0; j < c.maxY; j++ {
+			for k := 0; k < c.maxZ; k++ {
+				for _, neighbor := range c.cloud[i][j][k].neighbors {
+					if neighbor.material == air && c.cloud[i][j][k].material != lava {
+						c.cloud[i][j][k].material = air
+						break
+					}
+				}
+			}
+		}
+	}
+
 	c.built = true
 }
 
-func (c *Cloud) getNeighbor(x int, y int, z int) point {
+func (c *Cloud) getNeighbor(x int, y int, z int) *point {
 	if x < 0 || y < 0 || z < 0 || x >= c.maxX || y >= c.maxY || z >= c.maxZ {
-		return newPoint(x, y, z, air)
+		pnt := newPoint(x, y, z, air)
+
+		return &pnt
 	}
 
-	return c.cloud[x][y][z]
+	return &c.cloud[x][y][z]
 }
