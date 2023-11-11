@@ -98,18 +98,7 @@ func (c *Cloud) buildCloud() {
 		}
 	}
 
-	for i := 0; i < c.maxX; i++ {
-		for j := 0; j < c.maxY; j++ {
-			for k := 0; k < c.maxZ; k++ {
-				for _, neighbor := range c.cloud[i][j][k].neighbors {
-					if neighbor.material == air && c.cloud[i][j][k].material != lava {
-						c.cloud[i][j][k].material = air
-						break
-					}
-				}
-			}
-		}
-	}
+	c.cloud[0][0][0].cool()
 
 	c.built = true
 }

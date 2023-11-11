@@ -23,3 +23,24 @@ func newPoint(x, y, z int, material materialType) point {
 		neighbors: make([]*point, 0, shapeSidesCount),
 	}
 }
+
+func (p *point) cool() {
+	if p.material == lava || p.material == air {
+		return
+	}
+
+	if len(p.neighbors) == 0 {
+		return
+	}
+
+	for _, neighbor := range p.neighbors {
+		if neighbor.material == air && p.material != lava {
+			p.material = air
+			break
+		}
+	}
+
+	for _, neighbor := range p.neighbors {
+		neighbor.cool()
+	}
+}
