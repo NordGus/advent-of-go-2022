@@ -47,8 +47,8 @@ func TestCloud_CountSidesThatAreNotConnectedBetweenCubes(t *testing.T) {
 				maxY:   tt.fields.maxY,
 				maxZ:   tt.fields.maxZ,
 			}
-			if got := c.CountSidesThatAreNotConnectedBetweenCubes(); got != tt.want {
-				t.Errorf("CountSidesThatAreNotConnectedBetweenCubes() = %v, want %v", got, tt.want)
+			if got := c.CountSurfaceAreaOfLavaDroplet(); got != tt.want {
+				t.Errorf("CountSurfaceAreaOfLavaDroplet() = %v, want %v", got, tt.want)
 			}
 		})
 	}

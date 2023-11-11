@@ -36,7 +36,7 @@ func (c *Cloud) AddPoint(data [3]int) {
 	c.points = append(c.points, p)
 }
 
-func (c *Cloud) CountSidesThatAreNotConnectedBetweenCubes() int {
+func (c *Cloud) CountSurfaceAreaOfLavaDroplet() int {
 	var (
 		space = c.buildSpace()
 		sides = len(c.points) * shapeSidesCount
