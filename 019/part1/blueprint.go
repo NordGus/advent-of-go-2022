@@ -7,13 +7,13 @@ const (
 type Blueprint struct {
 	id int
 
-	robots []robot
+	robots map[Resource]robot
 }
 
 func NewBlueprint(id int) Blueprint {
 	return Blueprint{
 		id:     id,
-		robots: make([]robot, 0, initialRobotCapacity),
+		robots: make(map[Resource]robot, initialRobotCapacity),
 	}
 }
 
@@ -28,7 +28,7 @@ func (b *Blueprint) AddRobotRecipe(resource string, costs map[string]int) error 
 		return err
 	}
 
-	b.robots = append(b.robots, rbt)
+	b.robots[rbt.Resource] = rbt
 
 	return err
 }

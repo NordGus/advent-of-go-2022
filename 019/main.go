@@ -6,13 +6,17 @@ import (
 	"github.com/NordGus/advent-of-go-2022/019/part1"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	inputFileName = "019/input.txt"
+
+	part1TimeLimit = 24
 )
 
 type InputBlueprint struct {
@@ -52,12 +56,12 @@ func main() {
 			}
 		}
 
-		factory1 := part1.NewFactory(blueprint)
-
-		factories1 = append(factories1, factory1)
-
-		fmt.Printf("%+v\n", factory1)
+		factories1 = append(factories1, part1.NewFactory(blueprint))
 	}
+
+	start1 := time.Now()
+	p1 := executePart1Simulation(factories1, part1TimeLimit)
+	fmt.Printf("Part 1: What do you get if you add up the quality level of all of the blueprints in your list? %v (took %v)\n", p1, time.Since(start1))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
@@ -197,4 +201,37 @@ func parseBlueprintRobotsCosts(blueprints <-chan InputBlueprint) <-chan InputBlu
 	}(blueprints, out)
 
 	return out
+}
+
+func executePart1Simulation(factories []part1.Factory, duration int) int {
+	var (
+		result int
+		wg     sync.WaitGroup
+
+		results = make(chan int, len(factories))
+		sem     = make(chan bool, runtime.GOMAXPROCS(0)-2)
+	)
+
+	wg.Add(len(factories))
+
+	for _, factory := range factories {
+		go func(wg *sync.WaitGroup, sem chan bool, out chan<- int, factory part1.Factory, duration int) {
+			defer func() {
+				<-sem
+				wg.Done()
+			}()
+
+			sem <- true
+			out <- factory.QualityScoreDuring(duration)
+		}(&wg, sem, results, factory, duration)
+	}
+
+	wg.Wait()
+	close(results)
+
+	for r := range results {
+		result += r
+	}
+
+	return result
 }

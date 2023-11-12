@@ -49,3 +49,17 @@ func newRobot(resource string, costs map[string]int) (robot, error) {
 
 	return rbt, err
 }
+
+func (r robot) canBeBuilt(resources map[Resource]int) bool {
+	if r.Cost == nil {
+		return false
+	}
+
+	for resource, cost := range r.Cost {
+		if resources[resource] < cost {
+			return false
+		}
+	}
+
+	return true
+}
