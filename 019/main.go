@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	blprnt "github.com/NordGus/advent-of-go-2022/019/shared/blueprint"
 )
 
 const (
@@ -23,12 +25,7 @@ type InputBlueprint struct {
 type InputRobotCost struct {
 	RawData   string
 	Type      string
-	Materials []InputMaterialCost
-}
-
-type InputMaterialCost struct {
-	Type string
-	Cost int
+	Materials map[string]int
 }
 
 func main() {
@@ -38,6 +35,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	blprnts := make([]blprnt.Blueprint, 0, 10)
+
 	input := scanInput(file)
 	blueprints := initBlueprint(input)
 	blueprintsWithIDs := parseBlueprintID(blueprints)
@@ -45,7 +44,19 @@ func main() {
 	blueprintsCompleted := parseBlueprintRobotsCosts(blueprintsWithRobots)
 
 	for blueprint := range blueprintsCompleted {
-		fmt.Printf("%+v\n", blueprint)
+		b := blprnt.New(blueprint.ID)
+
+		for _, robot := range blueprint.Robots {
+			err := b.AddRobotRecipe(robot.Type, robot.Materials)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		blprnts = append(blprnts, b)
+
+		fmt.Printf("%v\n", blueprint)
+		fmt.Printf("%+v\n", b)
 	}
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
@@ -166,15 +177,14 @@ func parseBlueprintRobotsCosts(blueprints <-chan InputBlueprint) <-chan InputBlu
 
 				rawData = strings.Split(robot.RawData, " and ")
 
-				in.Robots[i].Materials = make([]InputMaterialCost, len(rawData))
+				in.Robots[i].Materials = make(map[string]int, len(rawData))
 
-				for j := 0; j < len(in.Robots[i].Materials); j++ {
+				for j := 0; j < len(rawData); j++ {
 					data := strings.Split(rawData[j], " ")
 
 					cost, _ := strconv.ParseInt(data[0], 10, 64)
 
-					in.Robots[i].Materials[j].Cost = int(cost)
-					in.Robots[i].Materials[j].Type = data[1]
+					in.Robots[i].Materials[data[1]] = int(cost)
 				}
 
 				in.Robots[i].RawData = ""
