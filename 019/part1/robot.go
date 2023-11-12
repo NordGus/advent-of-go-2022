@@ -1,4 +1,4 @@
-package blueprint
+package part1
 
 import (
 	"errors"

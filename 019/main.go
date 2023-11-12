@@ -3,13 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/NordGus/advent-of-go-2022/019/part1"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	blprnt "github.com/NordGus/advent-of-go-2022/019/shared/blueprint"
 )
 
 const (
@@ -35,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	blprnts := make([]blprnt.Blueprint, 0, 10)
+	factories1 := make([]part1.Factory, 0, 10)
 
 	input := scanInput(file)
 	blueprints := initBlueprint(input)
@@ -43,27 +42,28 @@ func main() {
 	blueprintsWithRobots := parseBlueprintRobots(blueprintsWithIDs)
 	blueprintsCompleted := parseBlueprintRobotsCosts(blueprintsWithRobots)
 
-	for blueprint := range blueprintsCompleted {
-		b := blprnt.New(blueprint.ID)
+	for b := range blueprintsCompleted {
+		blueprint := part1.NewBlueprint(b.ID)
 
-		for _, robot := range blueprint.Robots {
-			err := b.AddRobotRecipe(robot.Type, robot.Materials)
+		for _, robot := range b.Robots {
+			err := blueprint.AddRobotRecipe(robot.Type, robot.Materials)
 			if err != nil {
 				panic(err)
 			}
 		}
 
-		blprnts = append(blprnts, b)
+		factory1 := part1.NewFactory(blueprint)
 
-		fmt.Printf("%v\n", blueprint)
-		fmt.Printf("%+v\n", b)
+		factories1 = append(factories1, factory1)
+
+		fmt.Printf("%+v\n", factory1)
 	}
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
 
 func scanInput(input *os.File) <-chan string {
-	out := make(chan string)
+	out := make(chan string, 5)
 
 	scanner := bufio.NewScanner(input)
 
@@ -80,7 +80,7 @@ func scanInput(input *os.File) <-chan string {
 }
 
 func initBlueprint(input <-chan string) <-chan InputBlueprint {
-	out := make(chan InputBlueprint)
+	out := make(chan InputBlueprint, 5)
 
 	go func(input <-chan string, out chan<- InputBlueprint) {
 		for in := range input {
@@ -94,7 +94,7 @@ func initBlueprint(input <-chan string) <-chan InputBlueprint {
 }
 
 func parseBlueprintID(blueprints <-chan InputBlueprint) <-chan InputBlueprint {
-	out := make(chan InputBlueprint)
+	out := make(chan InputBlueprint, 5)
 
 	go func(input <-chan InputBlueprint, out chan<- InputBlueprint) {
 		for in := range input {
@@ -121,7 +121,7 @@ func parseBlueprintID(blueprints <-chan InputBlueprint) <-chan InputBlueprint {
 }
 
 func parseBlueprintRobots(blueprints <-chan InputBlueprint) <-chan InputBlueprint {
-	out := make(chan InputBlueprint)
+	out := make(chan InputBlueprint, 5)
 
 	go func(input <-chan InputBlueprint, out chan<- InputBlueprint) {
 		for in := range input {
@@ -162,7 +162,7 @@ func parseBlueprintRobots(blueprints <-chan InputBlueprint) <-chan InputBlueprin
 }
 
 func parseBlueprintRobotsCosts(blueprints <-chan InputBlueprint) <-chan InputBlueprint {
-	out := make(chan InputBlueprint)
+	out := make(chan InputBlueprint, 5)
 
 	go func(input <-chan InputBlueprint, out chan<- InputBlueprint) {
 		for in := range input {

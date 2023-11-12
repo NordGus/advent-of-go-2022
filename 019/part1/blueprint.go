@@ -1,19 +1,19 @@
-package blueprint
+package part1
 
 const (
 	initialRobotCapacity = 5
 )
 
 type Blueprint struct {
-	ID int
+	id int
 
-	Robots []robot
+	robots []robot
 }
 
-func New(id int) Blueprint {
+func NewBlueprint(id int) Blueprint {
 	return Blueprint{
-		ID:     id,
-		Robots: make([]robot, 0, initialRobotCapacity),
+		id:     id,
+		robots: make([]robot, 0, initialRobotCapacity),
 	}
 }
 
@@ -28,7 +28,7 @@ func (b *Blueprint) AddRobotRecipe(resource string, costs map[string]int) error 
 		return err
 	}
 
-	b.Robots = append(b.Robots, rbt)
+	b.robots = append(b.robots, rbt)
 
 	return err
 }
