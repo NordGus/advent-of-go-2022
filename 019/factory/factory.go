@@ -1,8 +1,6 @@
 package factory
 
-import (
-	"runtime"
-)
+import "runtime"
 
 type state struct {
 	OreRobots      int
@@ -17,8 +15,9 @@ type state struct {
 }
 
 type tick struct {
-	state state
-	time  int
+	state   state
+	skipped Resource
+	time    int
 }
 
 type Factory struct {
@@ -40,10 +39,10 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 		states  = make([]tick, 0, 100000)
 		visited = make(map[state]bool, 100000)
 		robots  = []Resource{Geode, Obsidian, Clay, Ore}
-		top     = state{OreRobots: 1}
+		top     = tick{state: state{OreRobots: 1}, time: 0}
 	)
 
-	states = append(states, tick{state: top})
+	states = append(states, top)
 
 	for i := uint32(0); len(states) > 0; i++ {
 		var (
@@ -53,15 +52,25 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 
 		states = states[1:]
 
-		if current.state.Geode > top.Geode {
-			top = current.state
+		if current.state.Geode > top.state.Geode {
+			top = current
 		}
 
-		if current.state.Geode < top.Geode || visited[current.state] || current.time == duration {
+		if visited[current.state] || current.time == duration {
 			continue
 		}
 
 		for i := 0; i < len(robots); i++ {
+			if current.skipped == robots[i] {
+				produce := tick{state: nextState(current.state, robot{}), time: current.time + 1}
+
+				if !visited[produce.state] {
+					states = append(states, produce)
+				}
+
+				continue
+			}
+
 			if f.blueprint.robots[robots[i]].canBeBuilt(current.state.Ore, current.state.Clay, current.state.Obsidian) {
 				build := tick{state: nextState(current.state, f.blueprint.robots[robots[i]]), time: current.time + 1}
 
@@ -69,11 +78,17 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 					states = append(states, build)
 				}
 
-				skip = f.blueprint.robots[robots[i]].Resource == Geode
-			}
+				skip = true
 
-			if skip {
-				break
+				if robots[i] == Geode {
+					break
+				}
+
+				noBuild := tick{state: nextState(current.state, robot{}), skipped: robots[i], time: current.time + 1}
+
+				if !visited[noBuild.state] {
+					states = append(states, noBuild)
+				}
 			}
 		}
 
@@ -94,7 +109,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 
 	runtime.GC()
 
-	return top.Geode
+	return top.state.Geode
 }
 
 func nextState(prev state, rbt robot) state {
