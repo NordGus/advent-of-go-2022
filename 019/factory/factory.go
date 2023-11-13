@@ -46,18 +46,18 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 	states = append(states, tick{state: top})
 
 	for i := uint32(0); len(states) > 0; i++ {
-		current := states[0]
+		var (
+			skip    = false
+			current = states[0]
+		)
+
 		states = states[1:]
 
 		if current.state.Geode > top.Geode {
 			top = current.state
 		}
 
-		if visited[current.state] {
-			continue
-		}
-
-		if current.time == duration {
+		if current.state.Geode < top.Geode || visited[current.state] || current.time == duration {
 			continue
 		}
 
@@ -68,13 +68,21 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 				if !visited[build.state] {
 					states = append(states, build)
 				}
+
+				skip = f.blueprint.robots[robots[i]].Resource == Geode
+			}
+
+			if skip {
+				break
 			}
 		}
 
-		produce := tick{state: nextState(current.state, robot{}), time: current.time + 1}
+		if !skip {
+			produce := tick{state: nextState(current.state, robot{}), time: current.time + 1}
 
-		if !visited[produce.state] {
-			states = append(states, produce)
+			if !visited[produce.state] {
+				states = append(states, produce)
+			}
 		}
 
 		visited[current.state] = true
