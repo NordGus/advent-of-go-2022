@@ -12,7 +12,9 @@ const (
 type robot struct {
 	Resource Resource
 
-	Cost map[Resource]int
+	Ore      int
+	Clay     int
+	Obsidian int
 }
 
 func newRobot(resource string, costs map[string]int) (robot, error) {
@@ -45,21 +47,13 @@ func newRobot(resource string, costs map[string]int) (robot, error) {
 	}
 
 	rbt.Resource = rsrc
-	rbt.Cost = cst
+	rbt.Ore = cst[Ore]
+	rbt.Clay = cst[Clay]
+	rbt.Obsidian = cst[Obsidian]
 
 	return rbt, err
 }
 
-func (r robot) canBeBuilt(resources map[Resource]int) bool {
-	if r.Cost == nil {
-		return false
-	}
-
-	for resource, cost := range r.Cost {
-		if resources[resource] < cost {
-			return false
-		}
-	}
-
-	return true
+func (r robot) canBeBuilt(ore int, clay int, obsidian int) bool {
+	return ore >= r.Ore && clay >= r.Clay && obsidian >= r.Obsidian
 }

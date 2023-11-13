@@ -17,7 +17,7 @@ var (
 // Queue is an implementation of a priority queue.
 type Queue[T any] struct {
 	items []node[T]
-	count uint
+	count uint64
 }
 
 // node is the container that stores each item (value) in the Queue with its respective priority.
@@ -33,6 +33,10 @@ func New[T any]() *Queue[T] {
 	}
 }
 
+func (q *Queue[T]) IsEmpty() bool {
+	return q.count == 0
+}
+
 // Enqueue adds a new item to the Queue with the given priority. It returns an error if the Queue is full.
 func (q *Queue[T]) Enqueue(item T, priority int) error {
 	if q.count == math.MaxUint {
@@ -44,7 +48,7 @@ func (q *Queue[T]) Enqueue(item T, priority int) error {
 	q.items = append(q.items, nd)
 	q.count++
 
-	q.bubbleUp(q.count - 1)
+	//q.bubbleUp(q.count - 1)
 
 	return nil
 }
@@ -63,7 +67,7 @@ func (q *Queue[T]) Pop() (T, error) {
 	q.items = q.items[1:]
 	q.count--
 
-	q.bubbleDown(0)
+	//q.bubbleDown(0)
 
 	return out, nil
 }
@@ -80,7 +84,7 @@ func (q *Queue[T]) Peek() (T, error) {
 }
 
 // bubbleUp moves the item in the given index up the heap
-func (q *Queue[T]) bubbleUp(index uint) {
+func (q *Queue[T]) bubbleUp(index uint64) {
 	var (
 		current = index
 		parent  = q.parent(index)
@@ -98,7 +102,7 @@ func (q *Queue[T]) bubbleUp(index uint) {
 }
 
 // bubbleDown moves the item in the given index down the heap
-func (q *Queue[T]) bubbleDown(index uint) {
+func (q *Queue[T]) bubbleDown(index uint64) {
 	var current = index
 
 	for current < q.count && !q.isValidParent(current) {
@@ -115,7 +119,7 @@ func (q *Queue[T]) bubbleDown(index uint) {
 }
 
 // parent is a helper function to calculate the given index parent index in the heap array
-func (q *Queue[T]) parent(index uint) uint {
+func (q *Queue[T]) parent(index uint64) uint64 {
 	if index == 0 {
 		return 0
 	}
@@ -124,7 +128,7 @@ func (q *Queue[T]) parent(index uint) uint {
 }
 
 // isValidParent is a helper function that validates that the item in the given index is a valid parent element in the heap.
-func (q *Queue[T]) isValidParent(parent uint) bool {
+func (q *Queue[T]) isValidParent(parent uint64) bool {
 	var (
 		left  = parent*2 + 1
 		right = parent*2 + 2
@@ -151,7 +155,7 @@ func (q *Queue[T]) isValidParent(parent uint) bool {
 }
 
 // largestChild is a helper function that returns the index of the top priority child of the item in the given index.
-func (q *Queue[T]) largestChild(parent uint) uint {
+func (q *Queue[T]) largestChild(parent uint64) uint64 {
 	var (
 		left  = parent*2 + 1
 		right = parent*2 + 2
