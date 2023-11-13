@@ -172,4 +172,4 @@ Determine the **quality level** of each blueprint by **multiplying that blueprin
 
 Determine the quality level of each blueprint using the largest number of geodes it could produce in 24 minutes. **What do you get if you add up the quality level of all of the blueprints in your list?**
 
-Your puzzle answer was `?`.
+Your puzzle answer was `1264`.
