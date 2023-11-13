@@ -226,6 +226,7 @@ func executePart2Simulation(factories []factory.Factory, duration int) int {
 
 	for i := 0; i < 3; i++ {
 		result *= factories[i].QualityScoreDuring(duration)
+		runtime.GC()
 	}
 
 	return result
