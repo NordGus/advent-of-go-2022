@@ -385,4 +385,4 @@ You **no longer have enough blueprints to worry about quality levels**. Instead,
 
 Don't worry about quality levels; instead, just determine the largest number of geodes you could open using each of the first three blueprints. **What do you get if you multiply these numbers together?**
 
-Your puzzle answer was `?`.
+Your puzzle answer was `13475`.
