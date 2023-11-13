@@ -61,6 +61,10 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 		}
 
 		for i := 0; i < len(robots); i++ {
+			if current.time+1 == duration {
+				break
+			}
+
 			if current.skipped == robots[i] {
 				produce := tick{state: nextState(current.state, robot{}), time: current.time + 1}
 
