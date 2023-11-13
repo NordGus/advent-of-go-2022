@@ -46,7 +46,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 
 	for i := uint32(0); len(states) > 0; i++ {
 		var (
-			skip    = false
+			built   = false
 			current = states[0]
 		)
 
@@ -82,7 +82,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 					states = append(states, build)
 				}
 
-				skip = true
+				built = true
 
 				if robots[i] == Geode {
 					break
@@ -96,7 +96,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 			}
 		}
 
-		if !skip {
+		if !built {
 			produce := tick{state: nextState(current.state, robot{}), time: current.time + 1}
 
 			if !visited[produce.state] {
