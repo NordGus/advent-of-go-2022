@@ -1,4 +1,4 @@
-package part1
+package factory
 
 import "testing"
 

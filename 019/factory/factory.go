@@ -1,4 +1,4 @@
-package part1
+package factory
 
 import (
 	"github.com/NordGus/advent-of-go-2022/019/shared/queue"
@@ -24,29 +24,37 @@ type tick struct {
 
 type Factory struct {
 	blueprint Blueprint
+	top       tick
 }
 
 func NewFactory(blueprint Blueprint) Factory {
 	return Factory{
 		blueprint: blueprint,
+		top: tick{
+			state: state{OreRobots: 1},
+			time:  0,
+		},
 	}
+}
+
+func (f *Factory) BlueprintID() int {
+	return f.blueprint.id
 }
 
 func (f *Factory) QualityScoreDuring(duration int) int {
 	var (
 		states  = queue.New[tick]()
 		visited = make(map[state]bool, 1000)
-		top     = state{OreRobots: 1}
 		robots  = []Resource{Geode, Obsidian, Clay, Ore}
 	)
 
-	_ = states.Enqueue(tick{state: top}, duration)
+	_ = states.Enqueue(f.top, duration-f.top.time)
 
 	for i := uint32(0); !states.IsEmpty(); i++ {
 		current, _ := states.Pop()
 
-		if current.state.Geode > top.Geode {
-			top = current.state
+		if current.state.Geode > f.top.state.Geode {
+			f.top = current
 		}
 
 		if visited[current.state] || current.time == duration {
@@ -71,7 +79,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 
 		visited[current.state] = true
 
-		if i%10000 == 0 {
+		if i%1000 == 0 {
 			runtime.GC()
 		}
 	}
@@ -81,7 +89,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 
 	runtime.GC()
 
-	return top.Geode * f.blueprint.id
+	return f.top.state.Geode
 }
 
 func nextState(prev state, rbt robot) state {

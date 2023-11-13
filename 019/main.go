@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/NordGus/advent-of-go-2022/019/part1"
+	"github.com/NordGus/advent-of-go-2022/019/factory"
 	"log"
 	"os"
 	"runtime"
@@ -16,6 +16,7 @@ const (
 	inputFileName = "019/input.txt"
 
 	part1TimeLimit = 24
+	part2TimeLimit = 32
 )
 
 type InputBlueprint struct {
@@ -37,7 +38,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	factories1 := make([]part1.Factory, 0, 10)
+	factories := make([]factory.Factory, 0, 10)
 
 	input := scanInput(file)
 	blueprints := initBlueprint(input)
@@ -46,7 +47,7 @@ func main() {
 	blueprintsCompleted := parseBlueprintRobotsCosts(blueprintsWithRobots)
 
 	for b := range blueprintsCompleted {
-		blueprint := part1.NewBlueprint(b.ID)
+		blueprint := factory.NewBlueprint(b.ID)
 
 		for _, robot := range b.Robots {
 			err := blueprint.AddRobotRecipe(robot.Type, robot.Materials)
@@ -55,12 +56,16 @@ func main() {
 			}
 		}
 
-		factories1 = append(factories1, part1.NewFactory(blueprint))
+		factories = append(factories, factory.NewFactory(blueprint))
 	}
 
 	start1 := time.Now()
-	p1 := executePart1Simulation(factories1, part1TimeLimit)
+	p1 := executePart1Simulation(factories, part1TimeLimit)
 	fmt.Printf("Part 1: What do you get if you add up the quality level of all of the blueprints in your list? %v (took %v)\n", p1, time.Since(start1))
+
+	start2 := time.Now()
+	p2 := executePart2Simulation(factories, part2TimeLimit)
+	fmt.Printf("Part 2: What do you get if you add up the quality level of all of the blueprints in your list? %v (took %v)\n", p2, time.Since(start2))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
@@ -202,14 +207,25 @@ func parseBlueprintRobotsCosts(blueprints <-chan InputBlueprint) <-chan InputBlu
 	return out
 }
 
-func executePart1Simulation(factories []part1.Factory, duration int) int {
+func executePart1Simulation(factories []factory.Factory, duration int) int {
 	var result int
 
 	runtime.GC()
 
-	for i, factory := range factories {
-		result += factory.QualityScoreDuring(duration)
-		fmt.Println("part 1:", i, result)
+	for i := 0; i < len(factories); i++ {
+		result += factories[i].QualityScoreDuring(duration) * factories[i].BlueprintID()
+	}
+
+	return result
+}
+
+func executePart2Simulation(factories []factory.Factory, duration int) int {
+	var result int = 1
+
+	runtime.GC()
+
+	for i := 0; i < 3; i++ {
+		result *= factories[i].QualityScoreDuring(duration)
 	}
 
 	return result

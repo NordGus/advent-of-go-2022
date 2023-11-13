@@ -1,4 +1,4 @@
-package part1
+package factory
 
 const (
 	initialRobotCapacity = 5
