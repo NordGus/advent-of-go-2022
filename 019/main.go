@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -204,33 +203,13 @@ func parseBlueprintRobotsCosts(blueprints <-chan InputBlueprint) <-chan InputBlu
 }
 
 func executePart1Simulation(factories []part1.Factory, duration int) int {
-	var (
-		result int
-		wg     sync.WaitGroup
+	var result int
 
-		results = make(chan int, len(factories))
-		sem     = make(chan bool, runtime.GOMAXPROCS(0)-2)
-	)
+	runtime.GC()
 
-	wg.Add(len(factories))
-
-	for _, factory := range factories {
-		go func(wg *sync.WaitGroup, sem chan bool, out chan<- int, factory part1.Factory, duration int) {
-			defer func() {
-				<-sem
-				wg.Done()
-			}()
-
-			sem <- true
-			out <- factory.QualityScoreDuring(duration)
-		}(&wg, sem, results, factory, duration)
-	}
-
-	wg.Wait()
-	close(results)
-
-	for r := range results {
-		result += r
+	for i, factory := range factories {
+		result += factory.QualityScoreDuring(duration)
+		fmt.Println("part 1:", i, result)
 	}
 
 	return result
