@@ -65,7 +65,7 @@ func main() {
 
 	start2 := time.Now()
 	p2 := executePart2Simulation(factories, part2TimeLimit)
-	fmt.Printf("Part 2: What do you get if you add up the quality level of all of the blueprints in your list? %v (took %v)\n", p2, time.Since(start2))
+	fmt.Printf("Part 2: What do you get if you multiply these numbers together? %v (took %v)\n", p2, time.Since(start2))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
