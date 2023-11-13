@@ -24,16 +24,11 @@ type tick struct {
 
 type Factory struct {
 	blueprint Blueprint
-	top       tick
 }
 
 func NewFactory(blueprint Blueprint) Factory {
 	return Factory{
 		blueprint: blueprint,
-		top: tick{
-			state: state{OreRobots: 1},
-			time:  0,
-		},
 	}
 }
 
@@ -46,15 +41,16 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 		states  = queue.New[tick]()
 		visited = make(map[state]bool, 1000)
 		robots  = []Resource{Geode, Obsidian, Clay, Ore}
+		top     = state{OreRobots: 1}
 	)
 
-	_ = states.Enqueue(f.top, duration-f.top.time)
+	_ = states.Enqueue(tick{state: top}, duration)
 
 	for i := uint32(0); !states.IsEmpty(); i++ {
 		current, _ := states.Pop()
 
-		if current.state.Geode > f.top.state.Geode {
-			f.top = current
+		if current.state.Geode > top.Geode {
+			top = current.state
 		}
 
 		if visited[current.state] || current.time == duration {
@@ -89,7 +85,7 @@ func (f *Factory) QualityScoreDuring(duration int) int {
 
 	runtime.GC()
 
-	return f.top.state.Geode
+	return top.Geode
 }
 
 func nextState(prev state, rbt robot) state {
