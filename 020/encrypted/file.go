@@ -90,6 +90,7 @@ func (f *File) getTargetMixedIndex(moves int, from int) int {
 	return target
 }
 
+// mix moves the value around from the from index to the to index.
 func (f *File) mix(value int, from int, to int) {
 	f.mixed = append(f.mixed[:from], f.mixed[from+1:]...) // remove value
 
