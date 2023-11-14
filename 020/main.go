@@ -44,6 +44,10 @@ func main() {
 	p1 := file1.GetCoordinates(1000, 2000, 3000)
 	fmt.Printf("Part 1: What is the sum of the three numbers that form the grove coordinates? %v (took %v)\n", p1, time.Since(start1))
 
+	start2 := time.Now()
+	p2 := file2.GetDecryptedCoordinates(1000, 2000, 3000)
+	fmt.Printf("Part 2: What is the sum of the three numbers that form the grove coordinates? %v (took %v)\n", p2, time.Since(start2))
+
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
 
