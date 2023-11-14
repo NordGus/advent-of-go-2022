@@ -35,7 +35,9 @@ func main() {
 		encryptedFile.AddItem(number)
 	}
 
-	fmt.Println(encryptedFile.Size())
+	start1 := time.Now()
+	p1 := encryptedFile.MixFilePart1(1000, 2000, 3000)
+	fmt.Printf("Part 1: What is the sum of the three numbers that form the grove coordinates? %v (took %v)\n", p1, time.Since(start1))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
 }
