@@ -2,7 +2,7 @@ package encrypted
 
 import "testing"
 
-func TestFile_MixFilePart1(t *testing.T) {
+func TestFile_GetCoordinates(t *testing.T) {
 	type fields struct {
 		values []int64
 	}
@@ -25,15 +25,15 @@ func TestFile_MixFilePart1(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		f := New()
+		f := New(1)
 
 		for _, value := range tt.fields.values {
 			f.AddItem(value)
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			if got := f.MixFilePart1(tt.args.coordinates...); got != tt.want {
-				t.Errorf("MixFilePart1() = %v, want %v", got, tt.want)
+			if got := f.GetCoordinates(tt.args.coordinates...); got != tt.want {
+				t.Errorf("GetCoordinates() = %v, want %v", got, tt.want)
 			}
 		})
 	}

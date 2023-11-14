@@ -12,16 +12,18 @@ type node struct {
 
 type File struct {
 	items []*node
+	key   int64
 }
 
-func New() File {
+func New(key int64) File {
 	return File{
 		items: make([]*node, 0, defaultFileSize),
+		key:   key,
 	}
 }
 
 func (f *File) AddItem(item int64) {
-	n := &node{moves: item}
+	n := &node{moves: item * f.key}
 
 	if len(f.items) == 0 {
 		n.right = n
@@ -41,7 +43,7 @@ func (f *File) Size() int {
 	return len(f.items)
 }
 
-func (f *File) MixFilePart1(coordinates ...int) int64 {
+func (f *File) GetCoordinates(coordinates ...int) int64 {
 	var (
 		result int64
 		zero   *node

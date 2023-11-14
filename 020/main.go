@@ -13,6 +13,9 @@ import (
 
 const (
 	inputFileName = "020/input.txt"
+
+	encryptionKey1 = 1
+	encryptionKey2 = 811_589_153
 )
 
 func main() {
@@ -26,17 +29,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	encryptedFile := encrypted.New()
+	file1 := encrypted.New(encryptionKey1)
+	file2 := encrypted.New(encryptionKey2)
 
 	input := scanInput(ctx, file)
 	numbers := parseNumber(ctx, input)
 
 	for number := range numbers {
-		encryptedFile.AddItem(number)
+		file1.AddItem(number)
+		file2.AddItem(number)
 	}
 
 	start1 := time.Now()
-	p1 := encryptedFile.MixFilePart1(1000, 2000, 3000)
+	p1 := file1.GetCoordinates(1000, 2000, 3000)
 	fmt.Printf("Part 1: What is the sum of the three numbers that form the grove coordinates? %v (took %v)\n", p1, time.Since(start1))
 
 	fmt.Printf("took in total: %v\n", time.Since(start))
